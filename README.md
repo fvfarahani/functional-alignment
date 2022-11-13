@@ -1,6 +1,6 @@
 # Effect of connectivity hyperalignment (CHA) on brain network properties: from coarse-scale to fine-scale
 
-## Helpful links:
+## Helpful links: <br />
 https://github.com/PyMVPA/PyMVPA/blob/master/mvpa2/algorithms/searchlight_hyperalignment.py <br />
 https://github.com/Summer-MIND/mind_2017/blob/master/Tutorials/hyperalignment/hyperalignment_tutorial.ipynb <br />
 https://github.com/PyMVPA/PyMVPA/blob/master/mvpa2/algorithms/connectivity_hyperalignment.py <br />
