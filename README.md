@@ -7,5 +7,7 @@ https://github.com/PyMVPA/PyMVPA/blob/master/mvpa2/algorithms/connectivity_hyper
 https://brainiak.org/tutorials/
 https://hypertools.readthedocs.io/en/latest/tutorials/align.html#aligning-data-with-hyperalignment
 https://balsa.wustl.edu/DLabel/allScenes/B4Pxk
-\n HCP MMP: https://github.com/MRtrix3/mrtrix3/blob/master/share/mrtrix3/labelconvert/hcpmmp1_original.txt
-\n Templates and atlases: https://brainhack-princeton.github.io/handbook/content_pages/04-02-templates.html
+
+HCP MMP: https://github.com/MRtrix3/mrtrix3/blob/master/share/mrtrix3/labelconvert/hcpmmp1_original.txt
+
+Templates and atlases: https://brainhack-princeton.github.io/handbook/content_pages/04-02-templates.html
