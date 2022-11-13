@@ -1,7 +1,7 @@
 # Effect of connectivity hyperalignment (CHA) on brain network properties: from coarse-scale to fine-scale
 
-## Pipeline
-Weighted connectivity matrices (top) and binarized connectivity matrices (bottom, top 10% of strongest connections) for both morning (A and C) and evening (B and D) sessions (averaged across all participants in each session). The regions (nodes) are ordered according to which cognitive system they belong to.
+## An overview of the analysis pipeline
+(A) Searchlight connectivity hyperalignment is performed in three steps: first, a connectome is created for each participant (i.e., a similarity matrix made up of data and targets); second, for a given searchlight across participants, the local transformation per subject and the common model is computed (here, an example for two subjects is shown); third, a mapper (whole-cortex transformation) is obtained for each participant by aggregating their local transformations. (B) Fine-scale graph analysis. A connectome was created using both the original and hyperaligned data. For each type, the connectomes were used to compute networks and a series of commonly used graph measures. Group-level statistical analysis was performed on the extracted measures.
 
 ![alt text](https://github.com/fvfarahani/network-analysis-on-hyperaligned-fmri/blob/main/Pipeline.png?raw=true)
 
