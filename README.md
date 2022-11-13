@@ -5,7 +5,7 @@
 
 ![alt text](https://github.com/fvfarahani/network-analysis-on-hyperaligned-fmri/blob/main/Pipeline.png?raw=true)
 
-## Helpful links: <br />
+### Helpful links: <br />
 Searchlight Hyperalignment: https://github.com/PyMVPA/PyMVPA/blob/master/mvpa2/algorithms/searchlight_hyperalignment.py <br />
 Hyperalignment Tutorial: https://github.com/Summer-MIND/mind_2017/blob/master/Tutorials/hyperalignment/hyperalignment_tutorial.ipynb <br />
 Connectivity Hyperalignment: https://github.com/PyMVPA/PyMVPA/blob/master/mvpa2/algorithms/connectivity_hyperalignment.py <br />
