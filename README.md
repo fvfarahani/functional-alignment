@@ -6,7 +6,7 @@ https://github.com/Summer-MIND/mind_2017/blob/master/Tutorials/hyperalignment/hy
 https://github.com/PyMVPA/PyMVPA/blob/master/mvpa2/algorithms/connectivity_hyperalignment.py
 https://brainiak.org/tutorials/
 https://hypertools.readthedocs.io/en/latest/tutorials/align.html#aligning-data-with-hyperalignment
-https://balsa.wustl.edu/DLabel/allScenes/B4Pxk
+https://balsa.wustl.edu/DLabel/allScenes/B4Pxk\n
 
 HCP MMP: https://github.com/MRtrix3/mrtrix3/blob/master/share/mrtrix3/labelconvert/hcpmmp1_original.txt
 
