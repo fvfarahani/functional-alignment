@@ -3,7 +3,7 @@
 ## An overview of the analysis pipeline
 (A) Searchlight connectivity hyperalignment is performed in three steps: first, a connectome is created for each participant (i.e., a similarity matrix made up of data and targets); second, for a given searchlight across participants, the local transformation per subject and the common model is computed (here, an example for two subjects is shown); third, a mapper (whole-cortex transformation) is obtained for each participant by aggregating their local transformations. (B) Fine-scale graph analysis. A connectome was created using both the original and hyperaligned data. For each type, the connectomes were used to compute networks and a series of commonly used graph measures. Group-level statistical analysis was performed on the extracted measures.
 
-![alt text](https://github.com/fvfarahani/network-analysis-on-hyperaligned-fmri/blob/main/Pipeline.png?raw=true)
+![alt text](https://github.com/fvfarahani/hyperaligned-brain-network/blob/main/Pipeline.png?raw=true)
 
 ### Helpful links: <br />
 Searchlight Hyperalignment: https://github.com/PyMVPA/PyMVPA/blob/master/mvpa2/algorithms/searchlight_hyperalignment.py <br />
