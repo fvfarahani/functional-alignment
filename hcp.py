@@ -12,6 +12,7 @@ import hcp_utils as hcp
 import os
 from scipy.spatial.distance import pdist, cdist
 from scipy.stats.stats import pearsonr
+
 from mvpa2.datasets.base import Dataset
 from mvpa2.mappers.zscore import zscore
 from mvpa2.misc.surfing.queryengine import SurfaceQueryEngine
@@ -91,6 +92,8 @@ atlas = hcp.mmp # {‘mmp’, ‘ca_parcels’, ‘ca_network’, ‘yeo7’, �
 target_nmbr = len(atlas['nontrivial_ids'])-19 # 718, 379-19 
 grayordinate = 91282 # L(29696) + R(29716) vertices; whole brain has 91282 grayordinates (go)
 #hemi = 'left' # 'left' or 'right'
+
+# subjects = ['100206', '100307', '100408', '100610', '101006', '101107', '101309', '101915', '102008', '102311', '102513', '102816', '103111', '103414', '103515', '103818', '104012', '104416', '105014', '105115', '105216', '105620', '105923', '106016', '106319', '106521', '107018', '107321', '107422', '107725', '108121', '108222', '108323', '108525', '108828', '109123', '109325', '109830', '110007', '110411', '110613', '111009', '111312', '111413', '111716', '112112', '112314', '112516', '112920', '113215', '113619', '113922', '114217', '114318', '114419', '114621', '114823', '114924', '115017', '115219', '115320', '115825', '116524', '116726', '117122', '117324', '117930', '118124', '118528', '118730', '118932', '119126', '120212', '120515', '120717', '121416', '121618', '121921', '122317', '122620', '122822', '123117', '123420', '123521', '123824', '123925', '124220', '124422', '124624', '124826', '125525', '126325', '126628', '127327', '127630', '127933', '128026', '128127', '128632', '128935', '129028', '129129', '129331', '129634', '130013', '130316', '130417', '130619', '130821', '130922', '131217', '131419', '131722', '131823', '131924', '132017', '132118', '133019', '133827', '133928', '134021', '134223', '134324', '134425', '134728', '134829', '135225', '135528', '135730', '135932', '136227', '136732', '136833', '137027', '137128', '137229', '137633', '137936', '138231', '138534', '138837', '139233', '139637', '139839', '140319', '140824', '140925', '141119', '141826', '142828', '143426', '144125', '144428', '144832', '145127', '146129', '146331', '146432', '146533', '146937', '147030', '147737', '148032', '148133', '148335', '148840', '148941', '149236', '149337', '149539', '149741', '149842', '150625', '150726', '150928', '151223', '151425', '151526', '151627', '151728', '151829', '152831', '153025', '153227', '153429', '153631', '153833', '154229', '179245', '179346', '180129', '180432', '180735', '180836', '180937', '181131', '181232', '181636', '182032', '182436', '182739', '182840', '183034', '185139', '185341', '185442', '185846', '185947', '186141', '186444', '187143', '187547', '187850', '188347', '188448', '188751', '189349', '189450', '190031', '191033', '191336', '191437', '191942', '192035', '192136', '192540', '192641', '192843', '193239', '194140', '194645', '194746', '194847', '195041', '195647', '195849', '195950', '196144', '196346', '196750', '197348', '197550', '198249', '198350', '198451', '198653', '198855', '199150', '199251', '199453', '199655', '199958', '200008', '200614', '200917', '201111', '201414', '201818', '202113', '202719', '203418', '204016', '204319', '204420', '204622', '205725', '206222', '207123', '208024', '208125', '208226', '208327', '209127', '209228', '209329']
 
 #%% Editing/Saving CIFTI
 
@@ -1030,7 +1033,6 @@ process_data(data_path, output_dir, subjects, n_sbj, subject_disk_mapping, disks
 # #########################################################################
 
 # qsub -cwd -t 1:360 id_acc.sh
-# qsub -cwd -t 1,3,5,7 id_acc.sh
 
 import os
 roi = int(os.getenv("SGE_TASK_ID"))
@@ -1183,52 +1185,463 @@ new_img = nib.Cifti2Image(new_data, img.header)
 output_file = mmp_path + '/output/MSM_R1LR_R1RL.dscalar.nii'
 nib.save(new_img, output_file)
 
-#%% COARSE-SCALE TIMESERIES (WHOLE BRAIN PARCELLATION) + graph analysis
+#%% #######################################################################
+# *****                         Graph Analysis                        *****
+# #########################################################################
+
+# qsub -cwd -t 2:360 graph.sh --> only for fine calculations
+
+import os
+import pickle
+import numpy as np
+import networkx as nx
+import community
+import hcp_utils as hcp
+from nilearn.connectome import ConnectivityMeasure
+
+is_coarse = False  # set to True for coarse calculations, False for fine calculations
+
+# List of sessions
+sessions = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
+            'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
+
+subjects = ['100206', '100307', '100408', '100610', '101006', '101107', '101309', '101915', '102008', '102311', '102513', '102816', '103111', '103414', '103515', '103818', '104012', '104416', '105014', '105115', '105216', '105620', '105923', '106016', '106319', '106521', '107018', '107321', '107422', '107725', '108121', '108222', '108323', '108525', '108828', '109123', '109325', '109830', '110007', '110411', '110613', '111009', '111312', '111413', '111716', '112112', '112314', '112516', '112920', '113215', '113619', '113922', '114217', '114318', '114419', '114621', '114823', '114924', '115017', '115219', '115320', '115825', '116524', '116726', '117122', '117324', '117930', '118124', '118528', '118730', '118932', '119126', '120212', '120515', '120717', '121416', '121618', '121921', '122317', '122620', '122822', '123117', '123420', '123521', '123824', '123925', '124220', '124422', '124624', '124826', '125525', '126325', '126628', '127327', '127630', '127933', '128026', '128127', '128632', '128935', '129028', '129129', '129331', '129634', '130013', '130316', '130417', '130619', '130821', '130922', '131217', '131419', '131722', '131823', '131924', '132017', '132118', '133019', '133827', '133928', '134021', '134223', '134324', '134425', '134728', '134829', '135225', '135528', '135730', '135932', '136227', '136732', '136833', '137027', '137128', '137229', '137633', '137936', '138231', '138534', '138837', '139233', '139637', '139839', '140319', '140824', '140925', '141119', '141826', '142828', '143426', '144125', '144428', '144832', '145127', '146129', '146331', '146432', '146533', '146937', '147030', '147737', '148032', '148133', '148335', '148840', '148941', '149236', '149337', '149539', '149741', '149842', '150625', '150726', '150928', '151223', '151425', '151526', '151627', '151728', '151829', '152831', '153025', '153227', '153429', '153631', '153833', '154229', '179245', '179346', '180129', '180432', '180735', '180836', '180937', '181131', '181232', '181636', '182032', '182436', '182739', '182840', '183034', '185139', '185341', '185442', '185846', '185947', '186141', '186444', '187143', '187547', '187850', '188347', '188448', '188751', '189349', '189450', '190031', '191033', '191336', '191437', '191942', '192035', '192136', '192540', '192641', '192843', '193239', '194140', '194645', '194746', '194847', '195041', '195647', '195849', '195950', '196144', '196346', '196750', '197348', '197550', '198249', '198350', '198451', '198653', '198855', '199150', '199251', '199453', '199655', '199958', '200008', '200614', '200917', '201111', '201414', '201818', '202113', '202719', '203418', '204016', '204319', '204420', '204622', '205725', '206222', '207123', '208024', '208125', '208226', '208327', '209127', '209228', '209329']
+n_subjects = 200
+
+if not is_coarse:
+    # Define the ROI index for fine calculations
+    roi = 188
+    #roi = int(os.getenv("SGE_TASK_ID"))
+    roi_idx = np.where(hcp.mmp.map_all[:59412] == roi)[0] # only cortex
+
+# Define the connectivity measure
+correlation_measure = ConnectivityMeasure(kind='correlation') 
+# kind{“correlation”, “partial correlation”, “tangent”, “covariance”, “precision”}, optional
+
+# Directory containing the data files (time-series)
+data_dir = '/dcs05/ciprian/smart/farahani/SL-CHA/ts'
+
+# ***** TO BE SPECIFIED *****
+# ***** TO BE SPECIFIED *****
+session_name = sessions[4] 
+# Define the output directory and filename 
+if is_coarse:
+    output_dir = '/dcs05/ciprian/smart/farahani/SL-CHA/graph_measures/coarse/'
+    output_filename = f'graph_measures_{session_name}.pickle'
+else:
+    output_dir = '/dcs05/ciprian/smart/farahani/SL-CHA/graph_measures/fine/'
+    output_filename = f'graph_measures_roi{roi}_{session_name}.pickle'
+
+output_path = os.path.join(output_dir, output_filename)
+# ***** TO BE SPECIFIED *****
+# ***** TO BE SPECIFIED *****
+
+def extract_graph_measures(session_name, n_subjects, density):
+    
+    def calculate_path_length(G):
+        # get the connected components
+        components = list(nx.connected_components(G))
+        # compute the average shortest path length for each non-isolated component
+        component_lengths = []
+        for component in components:
+            # filter out isolated nodes
+            subgraph = G.subgraph(component)
+            non_isolated_nodes = [node for node in subgraph if len(list(subgraph.neighbors(node))) > 0]
+            if len(non_isolated_nodes) > 1:
+                subgraph = subgraph.subgraph(non_isolated_nodes)
+                component_lengths.append(nx.average_shortest_path_length(subgraph))
+        # Calculate the average path length over all non-isolated components
+        if len(component_lengths) > 0:
+            path_length = np.mean(component_lengths)
+        else:
+            path_length = np.nan
+        return path_length
+    
+    def calculate_small_worldness(G, cc, pl, n_rand=10):
+        rand_cc = []
+        rand_pl = []
+        for i in range(n_rand):
+            RG = nx.gnm_random_graph(G.number_of_nodes(), G.number_of_edges())
+            rand_cc.append(nx.average_clustering(RG))
+            #rand_pl.append(nx.average_shortest_path_length(RG))
+            rand_pl.append(calculate_path_length(RG))
+        rcc = np.mean(rand_cc)
+        rpl = np.mean(rand_pl)
+        return (cc / rcc) / (pl / rpl)
+    
+    # Initialize lists to store graph measures for all subjects
+    graph_measures = {'path_length': [], 'global_clustering': [], 'global_efficiency': [], 'assortativity': [],
+                      'modularity': [], 'small_worldness': [], 'degree': [], 'eigenvector_centrality': [], 
+                      'closeness_centrality': [], 'pagerank_centrality': [], 'local_clustering': [],  'k_coreness': []}
+    
+    for subject in subjects[:n_subjects]:
+        # Load the time series for the given subject and session
+        ts_path = os.path.join(data_dir, session_name, f'{session_name}_{subject}.npy')
+        ts = np.load(ts_path)
+        if is_coarse:
+            # parcelate time-series
+            ts_p = hcp.parcellate(ts, hcp.mmp)[:,:360] # coarse matrix
+        else:
+            # extract time-series of the selected ROI
+            ts_p = ts[:, roi_idx] # fine matrix
+        # Calculate the correlation matrix for the parcelated time series
+        corr = correlation_measure.fit_transform([ts_p])[0]
+        # Binarize the correlation matrix based on density
+        corr_flat = np.triu(corr, k=1).flatten() # Get the upper triangle elements of the correlation matrix
+        corr_flat = corr_flat[corr_flat != 0] # Remove zeros
+        corr_flat_sorted = np.sort(np.abs(corr_flat))[::-1] # Sort by absolute value in descending order
+        num_edges = int(density * len(corr_flat)) # Calculate the number of edges to keep based on the density
+        threshold = corr_flat_sorted[num_edges] # Get the threshold value based on the density
+        corr_binary = np.where(np.abs(corr - np.diag(np.diag(corr))) >= threshold, 1, 0)
+        
+        # Create an undirected graph from the binary correlation matrix
+        G = nx.from_numpy_array(corr_binary, create_using=nx.Graph())
+        
+        # Calculate global graph measures
+        path_length = calculate_path_length(G) # path_length = nx.average_shortest_path_length(G)
+        global_clustering = nx.average_clustering(G)
+        global_efficiency = nx.global_efficiency(G)
+        #local_efficiency = nx.local_efficiency(G) # time-consuming
+        assortativity = nx.degree_assortativity_coefficient(G)
+        modularity = community.modularity(community.best_partition(G), G) # compute the partition using the Louvain algorithm
+        small_worldness = calculate_small_worldness(G, global_clustering, path_length)
+        
+        # Calculate local graph measures
+        degree = dict(G.degree())
+        eigenvector_centrality = nx.eigenvector_centrality_numpy(G)
+        closeness_centrality = nx.closeness_centrality(G)
+        pagerank_centrality = nx.pagerank(G)
+        local_clustering = nx.clustering(G)
+        k_coreness = nx.core_number(G)
+        
+        # Store graph measures for this participant
+        graph_measures['path_length'].append(path_length)
+        graph_measures['global_clustering'].append(global_clustering)
+        graph_measures['global_efficiency'].append(global_efficiency)
+        graph_measures['assortativity'].append(assortativity)
+        graph_measures['modularity'].append(modularity)
+        graph_measures['small_worldness'].append(small_worldness)
+        graph_measures['degree'].append(list(degree.values()))
+        graph_measures['eigenvector_centrality'].append(list(eigenvector_centrality.values()))
+        graph_measures['closeness_centrality'].append(list(closeness_centrality.values()))
+        graph_measures['pagerank_centrality'].append(list(pagerank_centrality.values()))
+        graph_measures['local_clustering'].append(list(local_clustering.values()))
+        graph_measures['k_coreness'].append(list(k_coreness.values()))
+        
+        print(f'Subject {subject} processed.')
+        
+    # Serialize the graph_measures dictionary to a file in the output directory
+    with open(output_path, 'wb') as f:
+        pickle.dump(graph_measures, f)
+    
+    return graph_measures
+
+# Extract graph measures for a given session
+graph_measures = extract_graph_measures(session_name=session_name, n_subjects=n_subjects, density=0.3)
+
+# =============================================================================
+# # Load the serialized dictionary from the file
+# with open('graph_measures.pickle', 'rb') as f:
+#     graph_measures = pickle.load(f)  
+# =============================================================================
+
+#%% #######################################################################
+# *****      Connectome-based Predictive Modeling (Coarse-scale)      *****
+# #########################################################################
+
+# Define CPM functions
+import numpy as np
+import scipy as sp
+from matplotlib import pyplot as plt
+#%matplotlib inline
+import pandas as pd
+import seaborn as sns
+import os
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
+def mk_kfold_indices(subj_list, k=5):
+    """
+    Splits list of subjects into k folds for cross-validation.
+    """
+    
+    n_subs = len(subj_list)
+    n_subs_per_fold = n_subs//k # floor integer for n_subs_per_fold
+
+    indices = [[fold_no]*n_subs_per_fold for fold_no in range(k)] # generate repmat list of indices
+    remainder = n_subs % k # figure out how many subs are left over
+    remainder_inds = list(range(remainder))
+    indices = [item for sublist in indices for item in sublist]    
+    [indices.append(ind) for ind in remainder_inds] # add indices for remainder subs
+
+    assert len(indices)==n_subs, "Length of indices list does not equal number of subjects, something went wrong"
+
+    np.random.shuffle(indices) # shuffles in place
+
+    return np.array(indices)
+
+
+def split_train_test(subj_list, indices, test_fold):
+    """
+    For a subj list, k-fold indices, and given fold, returns lists of train_subs and test_subs
+    """
+
+    train_inds = np.where(indices!=test_fold)
+    test_inds = np.where(indices==test_fold)
+
+    train_subs = []
+    for sub in subj_list[train_inds]:
+        train_subs.append(sub)
+
+    test_subs = []
+    for sub in subj_list[test_inds]:
+        test_subs.append(sub)
+
+    return (train_subs, test_subs)
+
+
+def get_train_test_data(all_fc_data, train_subs, test_subs, behav_data, behav):
+
+    """
+    Extracts requested FC and behavioral data for a list of train_subs and test_subs
+    """
+
+    train_vcts = all_fc_data.loc[train_subs, :]
+    test_vcts = all_fc_data.loc[test_subs, :]
+
+    train_behav = behav_data.loc[train_subs, behav]
+
+    return (train_vcts, train_behav, test_vcts)
+
+
+def select_features(train_vcts, train_behav, r_thresh=0.2, corr_type='pearson', verbose=False):
+    
+    """
+    Runs the CPM feature selection step: 
+    - correlates each edge with behavior, and returns a mask of edges that are correlated above some threshold, one for each tail (positive and negative)
+    """
+
+    assert train_vcts.index.equals(train_behav.index), "Row indices of FC vcts and behavior don't match!"
+
+    # Correlate all edges with behav vector
+    if corr_type =='pearson':
+        cov = np.dot(train_behav.T - train_behav.mean(), train_vcts - train_vcts.mean(axis=0)) / (train_behav.shape[0]-1)
+        corr = cov / np.sqrt(np.var(train_behav, ddof=1) * np.var(train_vcts, axis=0, ddof=1))
+    elif corr_type =='spearman':
+        corr = []
+        for edge in train_vcts.columns:
+            r_val = sp.stats.spearmanr(train_vcts.loc[:,edge], train_behav)[0]
+            corr.append(r_val)
+
+    # Define positive and negative masks
+    mask_dict = {}
+    mask_dict["pos"] = corr > r_thresh
+    mask_dict["neg"] = corr < -r_thresh
+    
+    if verbose:
+        print("Found ({}/{}) edges positively/negatively correlated with behavior in the training set".format(mask_dict["pos"].sum(), mask_dict["neg"].sum())) # for debugging
+
+    return mask_dict
+
+
+def build_model(train_vcts, mask_dict, train_behav):
+    """
+    Builds a CPM model:
+    - takes a feature mask, sums all edges in the mask for each subject, and uses simple linear regression to relate summed network strength to behavior
+    """
+
+    assert train_vcts.index.equals(train_behav.index), "Row indices of FC vcts and behavior don't match!"
+
+    model_dict = {}
+
+    # Loop through pos and neg tails
+    X_glm = np.zeros((train_vcts.shape[0], len(mask_dict.items())))
+
+    t = 0
+    for tail, mask in mask_dict.items():
+        X = train_vcts.values[:, mask].sum(axis=1)
+        X_glm[:, t] = X
+        y = train_behav
+        (slope, intercept) = np.polyfit(X, y, 1)
+        model_dict[tail] = (slope, intercept)
+        t+=1
+
+    X_glm = np.c_[X_glm, np.ones(X_glm.shape[0])]
+    model_dict["glm"] = tuple(np.linalg.lstsq(X_glm, y, rcond=None)[0])
+
+    return model_dict
+
+
+def apply_model(test_vcts, mask_dict, model_dict):
+    """
+    Applies a previously trained linear regression model to a test set to generate predictions of behavior.
+    """
+
+    behav_pred = {}
+
+    X_glm = np.zeros((test_vcts.shape[0], len(mask_dict.items())))
+
+    # Loop through pos and neg tails
+    t = 0
+    for tail, mask in mask_dict.items():
+        X = test_vcts.loc[:, mask].sum(axis=1)
+        X_glm[:, t] = X
+
+        slope, intercept = model_dict[tail]
+        behav_pred[tail] = slope*X + intercept
+        t+=1
+
+    X_glm = np.c_[X_glm, np.ones(X_glm.shape[0])]
+    behav_pred["glm"] = np.dot(X_glm, model_dict["glm"])
+
+    return behav_pred
+
+
+def cpm_wrapper(all_fc_data, all_behav_data, behav, k=10, **cpm_kwargs):
+
+    assert all_fc_data.index.equals(all_behav_data.index), "Row (subject) indices of FC vcts and behavior don't match!"
+
+    subj_list = all_fc_data.index # get subj_list from df index
+    
+    indices = mk_kfold_indices(subj_list, k=k)
+    
+    # Initialize df for storing observed and predicted behavior
+    col_list = []
+    for tail in ["pos", "neg", "glm"]:
+        col_list.append(behav + " predicted (" + tail + ")")
+    col_list.append(behav + " observed")
+    behav_obs_pred = pd.DataFrame(index=subj_list, columns = col_list)
+    
+    # Initialize array for storing feature masks
+    n_edges = all_fc_data.shape[1]
+    all_masks = {}
+    all_masks["pos"] = np.zeros((k, n_edges))
+    all_masks["neg"] = np.zeros((k, n_edges))
+    
+    for fold in range(k):
+        #print("doing fold {}".format(fold))
+        train_subs, test_subs = split_train_test(subj_list, indices, test_fold=fold)
+        train_vcts, train_behav, test_vcts = get_train_test_data(all_fc_data, train_subs, test_subs, all_behav_data, behav=behav)
+        mask_dict = select_features(train_vcts, train_behav, **cpm_kwargs)
+        all_masks["pos"][fold,:] = mask_dict["pos"]
+        all_masks["neg"][fold,:] = mask_dict["neg"]
+        model_dict = build_model(train_vcts, mask_dict, train_behav)
+        behav_pred = apply_model(test_vcts, mask_dict, model_dict)
+        for tail, predictions in behav_pred.items():
+            behav_obs_pred.loc[test_subs, behav + " predicted (" + tail + ")"] = predictions
+            
+    behav_obs_pred.loc[subj_list, behav + " observed"] = all_behav_data[behav]
+    
+    return behav_obs_pred, all_masks
+
+
+def plot_predictions(behav_obs_pred, tail="glm"):
+    x = behav_obs_pred.filter(regex=("obs")).astype(float)
+    y = behav_obs_pred.filter(regex=(tail)).astype(float)
+
+    g = sns.regplot(x=x.T.squeeze(), y=y.T.squeeze(), color='gray')
+    ax_min = min(min(g.get_xlim()), min(g.get_ylim()))
+    ax_max = max(max(g.get_xlim()), max(g.get_ylim()))
+    g.set_xlim(ax_min, ax_max)
+    g.set_ylim(ax_min, ax_max)
+    g.set_aspect('equal', adjustable='box')
+    
+    r = sp.stats.pearsonr(x.values.ravel(),y.values.ravel())[0]
+    g.annotate('r = {0:.2f}'.format(r), xy = (0.7, 0.1), xycoords = 'axes fraction')
+    
+    return g
+
+#%% Now we run CPM!S
+import pandas as pd
+import pickle
+from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.metrics import mean_squared_error, r2_score
+from scipy.stats import spearmanr
+
+def load_graph_measures(filepath, measure, subjects):
+    with open(filepath, 'rb') as f:
+        graph_measures = pickle.load(f) 
+    data = pd.DataFrame(graph_measures[measure]).head(len(subjects))
+    data.index = subjects
+    return data
+
+def train_and_evaluate_model(X_train, y_train, X_test, y_test):
+    #reg = Ridge(alpha=1.0).fit(X_train, y_train) # Linear least squares with l2 regularization 
+    reg = LinearRegression().fit(X_train, y_train)               
+    y_pred = reg.predict(X_test)    
+    mse = mean_squared_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
+    return mse, r2
+
+subjects = ['100206', '100307', '100408', '100610', '101006', '101107', '101309', '101915', '102008', '102311', '102513', '102816', '103111', '103414', '103515', '103818', '104012', '104416', '105014', '105115', '105216', '105620', '105923', '106016', '106319', '106521', '107018', '107321', '107422', '107725', '108121', '108222', '108323', '108525', '108828', '109123', '109325', '109830', '110007', '110411', '110613', '111009', '111312', '111413', '111716', '112112', '112314', '112516', '112920', '113215', '113619', '113922', '114217', '114318', '114419', '114621', '114823', '114924', '115017', '115219', '115320', '115825', '116524', '116726', '117122', '117324', '117930', '118124', '118528', '118730', '118932', '119126', '120212', '120515', '120717', '121416', '121618', '121921', '122317', '122620', '122822', '123117', '123420', '123521', '123824', '123925', '124220', '124422', '124624', '124826', '125525', '126325', '126628', '127327', '127630', '127933', '128026', '128127', '128632', '128935', '129028', '129129', '129331', '129634', '130013', '130316', '130417', '130619', '130821', '130922', '131217', '131419', '131722', '131823', '131924', '132017', '132118', '133019', '133827', '133928', '134021', '134223', '134324', '134425', '134728', '134829', '135225', '135528', '135730', '135932', '136227', '136732', '136833', '137027', '137128', '137229', '137633', '137936', '138231', '138534', '138837', '139233', '139637', '139839', '140319', '140824', '140925', '141119', '141826', '142828', '143426', '144125', '144428', '144832', '145127', '146129', '146331', '146432', '146533', '146937', '147030', '147737', '148032', '148133', '148335', '148840', '148941', '149236', '149337', '149539', '149741', '149842', '150625', '150726', '150928', '151223', '151425', '151526', '151627', '151728', '151829', '152831', '153025', '153227', '153429', '153631', '153833', '154229', '179245', '179346', '180129', '180432', '180735', '180836', '180937', '181131', '181232', '181636', '182032', '182436', '182739', '182840', '183034', '185139', '185341', '185442', '185846', '185947', '186141', '186444', '187143', '187547', '187850', '188347', '188448', '188751', '189349', '189450', '190031', '191033', '191336', '191437', '191942', '192035', '192136', '192540', '192641', '192843', '193239', '194140', '194645', '194746', '194847', '195041', '195647', '195849', '195950', '196144', '196346', '196750', '197348', '197550', '198249', '198350', '198451', '198653', '198855', '199150', '199251', '199453', '199655', '199958', '200008', '200614', '200917', '201111', '201414', '201818', '202113', '202719', '203418', '204016', '204319', '204420', '204622', '205725', '206222', '207123', '208024', '208125', '208226', '208327', '209127', '209228', '209329']
+n_subjects = 200
+measure = 'degree' # degree, eigenvector_centrality, closeness_centrality, pagerank_centrality, local_clustering, k_coreness
+behav = 'Fluid_intelligence' # Age_in_Yrs, BMI, Gender, DepressionScore, Fluid_intelligence
+demo = pd.read_excel('/Volumes/Elements/HCP_Motion/DemoData.xlsx', index_col='Subject')
+demo.index = demo.index.astype(str)
+behav_data = demo.loc[subjects[:n_subjects]]
+behav_data.fillna(behav_data.mean(), inplace=True)
+
+mean = []
+for roi in range(1, 30):
+    
+    len_roi = len(np.where(hcp.mmp.map_all[:59412] == roi)[0]) # only cortex
+
+    X_train = load_graph_measures('/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/fine/graph_measures_roi' + str(roi) + '_REST1_LR_CHA.pickle', measure, subjects[:n_subjects])
+    X_test = load_graph_measures('/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/fine/graph_measures_roi' + str(roi) + '_REST2_LR_CHA.pickle', measure, subjects[:n_subjects])
+    y_train = behav_data[behav]
+    y_test = behav_data[behav]
+    
+    mse, r2 = train_and_evaluate_model(X_train, y_train, X_test, y_test)
+    print(f'MSE: {mse:.3f}, L_ROI: {len_roi}')
+    #print(f'R^2: {r2:.3f}')
+    mean.append(mse)
+
+print(np.mean(mean))
+#%%
+# Choose which behavior you'd like to predict
+behav = 'Fluid_intelligence' # Age_in_Yrs, BMI, Gender, DepressionScore, Fluid_intelligence
+measure = 'degree' # degree, eigenvector_centrality, closeness_centrality, pagerank_centrality, local_clustering, k_coreness
+
+cpm_kwargs = {'r_thresh': 0.05, 'corr_type': 'pearson'}
+n_runs = 10
+
+mean = []
+for roi in range(1, 30):
+
+    data = load_graph_measures('/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/fine/graph_measures_roi' + str(roi) + '_REST2_LR_CHA.pickle', measure, subjects[:n_subjects])
+    
+    behav_obs_pred, all_masks = cpm_wrapper(data, behav_data, behav=behav, **cpm_kwargs)
+    
+    correlation = []
+    r_squared = []
+    mse = []
+    for i in range(n_runs):
+        behav_obs_pred, all_masks = cpm_wrapper(data, behav_data, behav=behav, **cpm_kwargs)
+        x = behav_obs_pred[behav + ' observed']
+        y = behav_obs_pred[behav + ' predicted (glm)']
+        correlation.append(sp.stats.pearsonr(x, y)[0])
+        r_squared.append(r2_score(x, y))
+        mse.append(mean_squared_error(x, y))
+    
+    #print(np.mean(correlation))
+    print(f'R^2: {np.mean(r_squared):.3f}')
+    #print(np.mean(mse))
+    mean.append(np.mean(mse))
+
+#print(np.mean(mean))
+#%%
+
+
 import numpy as np
 import brainconn
 from brainconn import degree, centrality, clustering, core, distance, modularity, utils, similarity
 import networkx as nx
 
+
 n_sbj = 30
 n_roi = 360
 
-ts_rest1LR = []
-ts_rest1RL = []
-ts_rest2LR = []
-ts_rest2RL = []
-ts_aligned_rest1LR = []
-ts_aligned_rest1RL = []
-ts_aligned_rest2LR = []
-ts_aligned_rest2RL = []
-
-# =============================================================================
-# aux = np.zeros((1200,31870)) # add zeros columns (instead of subcorticals) to created numpy arrays for parcelation purpose
-# 
-# # --------- unaligned ---------
-# for k in range(len(subjects1[0:n_sbj])):
-#     ts_rest1LR.append(hcp.parcellate(np.append(dss_rest1LR[k].samples, aux, 1), hcp.mmp)[:,:360])
-#     ts_rest1RL.append(hcp.parcellate(np.append(dss_rest1RL[k].samples, aux, 1), hcp.mmp)[:,:360])
-#     ts_rest2LR.append(hcp.parcellate(np.append(dss_rest2LR[k].samples, aux, 1), hcp.mmp)[:,:360])
-#     ts_rest2RL.append(hcp.parcellate(np.append(dss_rest2RL[k].samples, aux, 1), hcp.mmp)[:,:360])
-#     print(k) 
-# 
-# # --------- aligned ---------
-# for k in range(len(subjects1[0:n_sbj])):
-#     ts_aligned_rest1LR.append(hcp.parcellate(np.append(dss_aligned_rest1LR[k].samples, aux, 1), hcp.mmp)[:,:360])
-#     ts_aligned_rest1RL.append(hcp.parcellate(np.append(dss_aligned_rest1RL[k].samples, aux, 1), hcp.mmp)[:,:360])
-#     ts_aligned_rest2LR.append(hcp.parcellate(np.append(dss_aligned_rest2LR[k].samples, aux, 1), hcp.mmp)[:,:360])
-#     ts_aligned_rest2RL.append(hcp.parcellate(np.append(dss_aligned_rest2RL[k].samples, aux, 1), hcp.mmp)[:,:360])
-#     print(k)    
-# 
-# np.save('/dcl01/smart/data/fvfarahani/searchlight/ts_mmp/ts_rest1LR_30sbj', ts_rest1LR)
-# np.save('/dcl01/smart/data/fvfarahani/searchlight/ts_mmp/ts_rest1RL_30sbj', ts_rest1RL)    
-# np.save('/dcl01/smart/data/fvfarahani/searchlight/ts_mmp/ts_rest2LR_30sbj', ts_rest2LR)
-# np.save('/dcl01/smart/data/fvfarahani/searchlight/ts_mmp/ts_rest2RL_30sbj', ts_rest2RL)
-# np.save('/dcl01/smart/data/fvfarahani/searchlight/ts_mmp/ts_aligned_rest1LR_30sbj', ts_aligned_rest1LR)
-# np.save('/dcl01/smart/data/fvfarahani/searchlight/ts_mmp/ts_aligned_rest1RL_30sbj', ts_aligned_rest1RL)    
-# np.save('/dcl01/smart/data/fvfarahani/searchlight/ts_mmp/ts_aligned_rest2LR_30sbj', ts_aligned_rest2LR)
-# np.save('/dcl01/smart/data/fvfarahani/searchlight/ts_mmp/ts_aligned_rest2RL_30sbj', ts_aligned_rest2RL)
-# 
 # =============================================================================
 # load timeseries
 ts_rest1LR = np.load('/Volumes/Elements/Hyperalignment/HCP/results_30sbj/ts_mmp/ts_rest1LR_30sbj.npy') 
@@ -1252,17 +1665,6 @@ corr_aligned_rest1LR = abs(correlation_measure.fit_transform(ts_aligned_rest1LR)
 corr_aligned_rest1RL = abs(correlation_measure.fit_transform(ts_aligned_rest1RL))
 corr_aligned_rest2LR = abs(correlation_measure.fit_transform(ts_aligned_rest2LR))
 corr_aligned_rest2RL = abs(correlation_measure.fit_transform(ts_aligned_rest2RL))
-
-# if concatenation is neeeded
-"""ts_REST1 = np.hstack((ts_rest1LR, ts_rest1RL))
-ts_REST2 = np.hstack((ts_rest2LR, ts_rest2RL))
-ts_aligned_REST1 = np.hstack((ts_aligned_rest1LR, ts_aligned_rest1RL))
-ts_aligned_REST2 = np.hstack((ts_aligned_rest2LR, ts_aligned_rest2RL))
-
-corr_REST1 = correlation_measure.fit_transform(ts_REST1)
-corr_REST2 = correlation_measure.fit_transform(ts_REST2)
-corr_aligned_REST1 = correlation_measure.fit_transform(ts_aligned_REST1)
-corr_aligned_REST2 = correlation_measure.fit_transform(ts_aligned_REST2)"""
 
 # remove the self-connections (zero diagonal) and create weighted graphs
 adj_wei = [[] for i in range(8)] # 8 sets (list of lists; wrong way -> adj_wei = [[]] * 8)
