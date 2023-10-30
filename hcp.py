@@ -733,22 +733,23 @@ var3 = df_subject['rest2LR'].values # Test1, 2, 3
 var4 = df_subject['aligned_rest2LR'].values # Aligned0, 1, 2, 3
 
 # 1.1) Average ISCs in each surface node 
-plt.figure(figsize=(8, 8))
-plt.scatter(var1, var2, s=20, alpha=0.4, edgecolors='none')
-plt.scatter(var1.mean(), var2.mean(), s=200, marker='o', color='r', edgecolors='k')
+plt.figure(figsize=(7, 7))
+plt.scatter(var1, var2, s=25, alpha=0.2, edgecolors='none', c='k', label='Data Points')
+plt.scatter(var1.mean(), var2.mean(), s=150, marker='o', color='r', edgecolors='k', label='Mean Point')
 plt.xlim([-0.05, 0.8]) 
 plt.ylim([-0.05, 0.8]) 
-plt.xlabel('MSM-All', size=26)
-plt.ylabel('Searchlight CHA', size=26)
+plt.xlabel('MSM', size=22)
+plt.ylabel('CHA', size=22)
 plt.xticks(fontsize=20)
 plt.yticks(fontsize=20)
 plt.plot([-1, 1], [-1, 1], 'k--')
-plt.text(var1.mean()-0.08, var2.mean()+0.03, '({:.2f}, {:.2f})'.format(var1.mean(), var2.mean()), fontsize=20, color='white', fontweight='bold')
-#plt.title('Average pairwise correlation', size=18)
+plt.text(var1.mean()-0.08, var2.mean()+0.03, '({:.2f}, {:.2f})'.format(var1.mean(), var2.mean()), fontsize=18, color='white', fontweight='bold')
+#plt.title('Average Pairwise Correlation', size=18)
 plt.tight_layout()
 plt.savefig('ISC-Vertex.png', dpi=300, bbox_inches='tight')
 plt.show()
 # var2.mean()/var1.mean()
+
 
 # 1.2) Distribution of ISCs across all voxels
 import seaborn as sns
@@ -774,23 +775,64 @@ plt.savefig('distribution_ISC.png', dpi=300, bbox_inches='tight')
 import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
-sns.set_style('white')
+from scipy.stats import linregress
 # Calculate Pearson correlation coefficient
 corr_coef, _ = pearsonr(var3, var4)
 # Create scatter plot with linear regression line
-ax = sns.regplot(x=var3, y=var4, scatter_kws={"s": 20})
+sns.set_style('white')
+plt.figure(figsize=(7, 7))
+ax = sns.regplot(x=var3, y=var4, scatter_kws={"s": 125, "alpha": 0.6, "edgecolors": 'none', "color": 'k'}, line_kws={"color": 'r'})
 # Add text with correlation coefficient to plot
-ax.text(0.05, 0.95, f'r = {corr_coef:.2f}', transform=ax.transAxes, fontsize=16, verticalalignment='top')
+ax.text(0.05, 0.95, f'r = {corr_coef:.2f}', transform=ax.transAxes, fontsize=20, verticalalignment='top')
 # Set axis labels and tick sizes
-ax.set_xlabel('MSM-All', fontsize='x-large')
-ax.set_ylabel('Searchlight CHA', fontsize='x-large')
+ax.set_xlabel('MSM', size=22)
+ax.set_ylabel('CHA', size=22)
+# Set xtick and ytick labels with one decimal place
+ax.xaxis.set_major_formatter(plt.FormatStrFormatter('%.2f'))
+ax.yaxis.set_major_formatter(plt.FormatStrFormatter('%.2f'))
+# Set the same number of ticks for both axes
+ax.xaxis.set_major_locator(plt.MaxNLocator(9))
+ax.yaxis.set_major_locator(plt.MaxNLocator(9))
+# Set tick label sizes
 ax.tick_params(labelsize=14)
 ax.xaxis.set_tick_params(labelsize=16)
 ax.yaxis.set_tick_params(labelsize=16)
+#################### EXTRA ####################
+# Grouping participants into low/high ISCs
+# 1. Calculate the predicted values using the regression line equation
+# Perform linear regression analysis to get the slope and intercept of the regression line
+slope, intercept, r_value, p_value, std_err = linregress(var3, var4)
+# Calculate the predicted values using the regression line equation
+predicted_values = slope * var3 + intercept
+# 2. Compare actual ISC values with predicted values and create a grouping variable
+# Calculate the distances between actual ISC values and predicted values
+distances = var4 - predicted_values
+# Sort the distances
+sorted_indices = distances.argsort()
+# Determine the quartiles
+Q1_cutoff = int(len(sorted_indices) * 0.25)
+Q2_cutoff = int(len(sorted_indices) * 0.5)
+Q3_cutoff = int(len(sorted_indices) * 0.75)
+# Identify subjects in each quartile
+Q1_subjects = sorted_indices[:Q1_cutoff]
+Q2_subjects = sorted_indices[Q1_cutoff:Q2_cutoff]
+Q3_subjects = sorted_indices[Q2_cutoff:Q3_cutoff]
+Q4_subjects = sorted_indices[Q3_cutoff:]
+# Create group labels for each subject based on quartiles
+group_labels = ["Q1" if i in Q1_subjects else "Q2" if i in Q2_subjects else "Q3" if i in Q3_subjects else "Q4" for i in range(len(var3))]
+# group_labels = ['Q1', 'Q3', 'Q2', 'Q4', 'Q3', 'Q1', 'Q2', 'Q4', 'Q2', 'Q1', 'Q2', 'Q2', 'Q4', 'Q2', 'Q2', 'Q2', 'Q4', 'Q3', 'Q2', 'Q2', 'Q2', 'Q4', 'Q1', 'Q4', 'Q1', 'Q4', 'Q1', 'Q3', 'Q2', 'Q2', 'Q2', 'Q4', 'Q2', 'Q1', 'Q1', 'Q1', 'Q4', 'Q2', 'Q3', 'Q1', 'Q1', 'Q3', 'Q3', 'Q3', 'Q3', 'Q2', 'Q4', 'Q3', 'Q1', 'Q1', 'Q4', 'Q1', 'Q2', 'Q2', 'Q3', 'Q2', 'Q4', 'Q1', 'Q3', 'Q3', 'Q4', 'Q1', 'Q1', 'Q4', 'Q1', 'Q2', 'Q4', 'Q4', 'Q3', 'Q4', 'Q3', 'Q2', 'Q1', 'Q1', 'Q2', 'Q1', 'Q4', 'Q1', 'Q4', 'Q3', 'Q4', 'Q3', 'Q2', 'Q3', 'Q2', 'Q1', 'Q4', 'Q2', 'Q1', 'Q3', 'Q3', 'Q1', 'Q1', 'Q2', 'Q2', 'Q3', 'Q2', 'Q1', 'Q1', 'Q4', 'Q3', 'Q4', 'Q1', 'Q1', 'Q4', 'Q2', 'Q2', 'Q2', 'Q1', 'Q4', 'Q3', 'Q3', 'Q4', 'Q2', 'Q3', 'Q2', 'Q3', 'Q1', 'Q1', 'Q2', 'Q2', 'Q2', 'Q3', 'Q3', 'Q2', 'Q1', 'Q2', 'Q3', 'Q3', 'Q1', 'Q4', 'Q3', 'Q3', 'Q2', 'Q2', 'Q4', 'Q4', 'Q1', 'Q4', 'Q1', 'Q1', 'Q3', 'Q1', 'Q4', 'Q4', 'Q3', 'Q1', 'Q2', 'Q1', 'Q1', 'Q4', 'Q1', 'Q1', 'Q4', 'Q3', 'Q2', 'Q1', 'Q2', 'Q4', 'Q4', 'Q3', 'Q3', 'Q2', 'Q4', 'Q4', 'Q3', 'Q4', 'Q4', 'Q3', 'Q4', 'Q3', 'Q4', 'Q3', 'Q3', 'Q2', 'Q2', 'Q4', 'Q1', 'Q3', 'Q4', 'Q3', 'Q1', 'Q2', 'Q4', 'Q4', 'Q3', 'Q3', 'Q3', 'Q1', 'Q3', 'Q3', 'Q3', 'Q2', 'Q2', 'Q4', 'Q4', 'Q4', 'Q1', 'Q1', 'Q4']
+# 3. Color the points based on group labels
+for group, color in {"Q1": 'g', "Q4": 'b'}.items():
+    group_mask = [label == group for label in group_labels]
+    ax.scatter(var3[group_mask], var4[group_mask], color=color, s=125, alpha=0.6, edgecolors='none')
+###############################################
+plt.plot([.25, .6], [.25, .6], 'k--')
 # Set square aspect ratio
 plt.axis('square')
 # Save plot
-plt.savefig('scatter_ISC.png', dpi=300, bbox_inches='tight')
+#plt.savefig('scatter_ISC.png', dpi=300, bbox_inches='tight')
+plt.show()
+
 
 # 1.3) Visualize results on cortical brain map (ONLY LEF OR RIGHT)
 view = 'medial' # {‘lateral’, ‘medial’, ‘dorsal’, ‘ventral’, ‘anterior’, ‘posterior’},
@@ -843,6 +885,39 @@ view.open_in_browser()
 
 #view = hcp.view_parcellation(hcp.mesh.inflated, hcp.mmp)
 #view.open_in_browser()"""
+
+#%% Plot ISCs using Workbench
+
+import os
+import nibabel as nib
+
+# Load the CIFTI2 file
+mmp_path = '/Volumes/Elements/Hyperalignment/HCP/workbench/MMP/'
+nifti_file = mmp_path + '/S1200.MyelinMap_BC_MSMAll.32k_fs_LR.dscalar.nii'
+img = nib.load(nifti_file)
+
+# Get the data array
+data = img.get_fdata()
+
+# Define the desired pair set
+pair_num = 3  # 1, 2, 3, 4
+columns = ['rest1LR', 'rest1RL', 'rest2LR', 'rest2RL',
+           'aligned_rest1LR', 'aligned_rest1RL', 'aligned_rest2LR', 'aligned_rest2RL']
+session_pair = [columns[pair_num - 1], columns[pair_num - 1 + 4]]
+
+# Extract the session data: create a copy of the data array and replace it
+data_MSM = df_node[session_pair[0]].values.reshape(1, -1)
+data_CHA = df_node[session_pair[1]].values.reshape(1, -1)
+
+# Create new CIFTI2 images
+img_MSM = nib.Cifti2Image(data_MSM, img.header)
+img_CHA = nib.Cifti2Image(data_CHA, img.header)
+
+# Save the modified CIFTI2 file
+output_file_MSM = os.path.join(mmp_path, 'output', 'ISC_' + session_pair[0] + '.dscalar.nii')
+nib.save(img_MSM, output_file_MSM)
+output_file_CHA = os.path.join(mmp_path, 'output', 'ISC_' + session_pair[1] + '.dscalar.nii')
+nib.save(img_CHA, output_file_CHA)
 
 #%% Fingerprinting (only unaligned data)
 ts_train = []
@@ -1173,7 +1248,7 @@ new_data = np.random.rand(*data.shape) # (1, 59412)
 for roi in range(1, 361):
     roi_idx = np.where(hcp.mmp.map_all[:59412] == roi)[0]
     try:
-        acc = np.load(f'{acc_path}/acc_roi_{roi}.npy')[0,1] # REST1_LR & REST1_RL
+        acc = np.load(f'{acc_path}/acc_roi_{roi}.npy')[1,0] # REST1_LR & REST1_RL
         new_data[0, roi_idx] = acc
     except FileNotFoundError:
         pass # do nothing if the file doesn't exist
@@ -1182,11 +1257,11 @@ for roi in range(1, 361):
 new_img = nib.Cifti2Image(new_data, img.header)
 
 # Save the modified CIFTI2 file
-output_file = mmp_path + '/output/MSM_R1LR_R1RL.dscalar.nii'
+output_file = mmp_path + '/output/CHA_R1LR_R1RL.dscalar.nii'
 nib.save(new_img, output_file)
 
 #%% #######################################################################
-# *****                         Graph Analysis                        *****
+# *****                    Graph Measure Extraction                   *****
 # #########################################################################
 
 # qsub -cwd -t 2:360 graph.sh --> only for fine calculations
@@ -1346,730 +1421,423 @@ graph_measures = extract_graph_measures(session_name=session_name, n_subjects=n_
 # =============================================================================
 
 #%% #######################################################################
-# *****      Connectome-based Predictive Modeling (Coarse-scale)      *****
+# *****                Graph-based Analysis (coarse)                  *****
 # #########################################################################
 
-# Define CPM functions
-import numpy as np
-import scipy as sp
-from matplotlib import pyplot as plt
-#%matplotlib inline
-import pandas as pd
-import seaborn as sns
+#% Boxplot
 import os
-import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
-
-def mk_kfold_indices(subj_list, k=5):
-    """
-    Splits list of subjects into k folds for cross-validation.
-    """
-    
-    n_subs = len(subj_list)
-    n_subs_per_fold = n_subs//k # floor integer for n_subs_per_fold
-
-    indices = [[fold_no]*n_subs_per_fold for fold_no in range(k)] # generate repmat list of indices
-    remainder = n_subs % k # figure out how many subs are left over
-    remainder_inds = list(range(remainder))
-    indices = [item for sublist in indices for item in sublist]    
-    [indices.append(ind) for ind in remainder_inds] # add indices for remainder subs
-
-    assert len(indices)==n_subs, "Length of indices list does not equal number of subjects, something went wrong"
-
-    np.random.shuffle(indices) # shuffles in place
-
-    return np.array(indices)
-
-
-def split_train_test(subj_list, indices, test_fold):
-    """
-    For a subj list, k-fold indices, and given fold, returns lists of train_subs and test_subs
-    """
-
-    train_inds = np.where(indices!=test_fold)
-    test_inds = np.where(indices==test_fold)
-
-    train_subs = []
-    for sub in subj_list[train_inds]:
-        train_subs.append(sub)
-
-    test_subs = []
-    for sub in subj_list[test_inds]:
-        test_subs.append(sub)
-
-    return (train_subs, test_subs)
-
-
-def get_train_test_data(all_fc_data, train_subs, test_subs, behav_data, behav):
-
-    """
-    Extracts requested FC and behavioral data for a list of train_subs and test_subs
-    """
-
-    train_vcts = all_fc_data.loc[train_subs, :]
-    test_vcts = all_fc_data.loc[test_subs, :]
-
-    train_behav = behav_data.loc[train_subs, behav]
-
-    return (train_vcts, train_behav, test_vcts)
-
-
-def select_features(train_vcts, train_behav, r_thresh=0.2, corr_type='pearson', verbose=False):
-    
-    """
-    Runs the CPM feature selection step: 
-    - correlates each edge with behavior, and returns a mask of edges that are correlated above some threshold, one for each tail (positive and negative)
-    """
-
-    assert train_vcts.index.equals(train_behav.index), "Row indices of FC vcts and behavior don't match!"
-
-    # Correlate all edges with behav vector
-    if corr_type =='pearson':
-        cov = np.dot(train_behav.T - train_behav.mean(), train_vcts - train_vcts.mean(axis=0)) / (train_behav.shape[0]-1)
-        corr = cov / np.sqrt(np.var(train_behav, ddof=1) * np.var(train_vcts, axis=0, ddof=1))
-    elif corr_type =='spearman':
-        corr = []
-        for edge in train_vcts.columns:
-            r_val = sp.stats.spearmanr(train_vcts.loc[:,edge], train_behav)[0]
-            corr.append(r_val)
-
-    # Define positive and negative masks
-    mask_dict = {}
-    mask_dict["pos"] = corr > r_thresh
-    mask_dict["neg"] = corr < -r_thresh
-    
-    if verbose:
-        print("Found ({}/{}) edges positively/negatively correlated with behavior in the training set".format(mask_dict["pos"].sum(), mask_dict["neg"].sum())) # for debugging
-
-    return mask_dict
-
-
-def build_model(train_vcts, mask_dict, train_behav):
-    """
-    Builds a CPM model:
-    - takes a feature mask, sums all edges in the mask for each subject, and uses simple linear regression to relate summed network strength to behavior
-    """
-
-    assert train_vcts.index.equals(train_behav.index), "Row indices of FC vcts and behavior don't match!"
-
-    model_dict = {}
-
-    # Loop through pos and neg tails
-    X_glm = np.zeros((train_vcts.shape[0], len(mask_dict.items())))
-
-    t = 0
-    for tail, mask in mask_dict.items():
-        X = train_vcts.values[:, mask].sum(axis=1)
-        X_glm[:, t] = X
-        y = train_behav
-        (slope, intercept) = np.polyfit(X, y, 1)
-        model_dict[tail] = (slope, intercept)
-        t+=1
-
-    X_glm = np.c_[X_glm, np.ones(X_glm.shape[0])]
-    model_dict["glm"] = tuple(np.linalg.lstsq(X_glm, y, rcond=None)[0])
-
-    return model_dict
-
-
-def apply_model(test_vcts, mask_dict, model_dict):
-    """
-    Applies a previously trained linear regression model to a test set to generate predictions of behavior.
-    """
-
-    behav_pred = {}
-
-    X_glm = np.zeros((test_vcts.shape[0], len(mask_dict.items())))
-
-    # Loop through pos and neg tails
-    t = 0
-    for tail, mask in mask_dict.items():
-        X = test_vcts.loc[:, mask].sum(axis=1)
-        X_glm[:, t] = X
-
-        slope, intercept = model_dict[tail]
-        behav_pred[tail] = slope*X + intercept
-        t+=1
-
-    X_glm = np.c_[X_glm, np.ones(X_glm.shape[0])]
-    behav_pred["glm"] = np.dot(X_glm, model_dict["glm"])
-
-    return behav_pred
-
-
-def cpm_wrapper(all_fc_data, all_behav_data, behav, k=10, **cpm_kwargs):
-
-    assert all_fc_data.index.equals(all_behav_data.index), "Row (subject) indices of FC vcts and behavior don't match!"
-
-    subj_list = all_fc_data.index # get subj_list from df index
-    
-    indices = mk_kfold_indices(subj_list, k=k)
-    
-    # Initialize df for storing observed and predicted behavior
-    col_list = []
-    for tail in ["pos", "neg", "glm"]:
-        col_list.append(behav + " predicted (" + tail + ")")
-    col_list.append(behav + " observed")
-    behav_obs_pred = pd.DataFrame(index=subj_list, columns = col_list)
-    
-    # Initialize array for storing feature masks
-    n_edges = all_fc_data.shape[1]
-    all_masks = {}
-    all_masks["pos"] = np.zeros((k, n_edges))
-    all_masks["neg"] = np.zeros((k, n_edges))
-    
-    for fold in range(k):
-        #print("doing fold {}".format(fold))
-        train_subs, test_subs = split_train_test(subj_list, indices, test_fold=fold)
-        train_vcts, train_behav, test_vcts = get_train_test_data(all_fc_data, train_subs, test_subs, all_behav_data, behav=behav)
-        mask_dict = select_features(train_vcts, train_behav, **cpm_kwargs)
-        all_masks["pos"][fold,:] = mask_dict["pos"]
-        all_masks["neg"][fold,:] = mask_dict["neg"]
-        model_dict = build_model(train_vcts, mask_dict, train_behav)
-        behav_pred = apply_model(test_vcts, mask_dict, model_dict)
-        for tail, predictions in behav_pred.items():
-            behav_obs_pred.loc[test_subs, behav + " predicted (" + tail + ")"] = predictions
-            
-    behav_obs_pred.loc[subj_list, behav + " observed"] = all_behav_data[behav]
-    
-    return behav_obs_pred, all_masks
-
-
-def plot_predictions(behav_obs_pred, tail="glm"):
-    x = behav_obs_pred.filter(regex=("obs")).astype(float)
-    y = behav_obs_pred.filter(regex=(tail)).astype(float)
-
-    g = sns.regplot(x=x.T.squeeze(), y=y.T.squeeze(), color='gray')
-    ax_min = min(min(g.get_xlim()), min(g.get_ylim()))
-    ax_max = max(max(g.get_xlim()), max(g.get_ylim()))
-    g.set_xlim(ax_min, ax_max)
-    g.set_ylim(ax_min, ax_max)
-    g.set_aspect('equal', adjustable='box')
-    
-    r = sp.stats.pearsonr(x.values.ravel(),y.values.ravel())[0]
-    g.annotate('r = {0:.2f}'.format(r), xy = (0.7, 0.1), xycoords = 'axes fraction')
-    
-    return g
-
-#%% Now we run CPM!S
-import pandas as pd
 import pickle
-from sklearn.linear_model import LinearRegression, Ridge
-from sklearn.metrics import mean_squared_error, r2_score
-from scipy.stats import spearmanr
-
-def load_graph_measures(filepath, measure, subjects):
-    with open(filepath, 'rb') as f:
-        graph_measures = pickle.load(f) 
-    data = pd.DataFrame(graph_measures[measure]).head(len(subjects))
-    data.index = subjects
-    return data
-
-def train_and_evaluate_model(X_train, y_train, X_test, y_test):
-    #reg = Ridge(alpha=1.0).fit(X_train, y_train) # Linear least squares with l2 regularization 
-    reg = LinearRegression().fit(X_train, y_train)               
-    y_pred = reg.predict(X_test)    
-    mse = mean_squared_error(y_test, y_pred)
-    r2 = r2_score(y_test, y_pred)
-    return mse, r2
-
-subjects = ['100206', '100307', '100408', '100610', '101006', '101107', '101309', '101915', '102008', '102311', '102513', '102816', '103111', '103414', '103515', '103818', '104012', '104416', '105014', '105115', '105216', '105620', '105923', '106016', '106319', '106521', '107018', '107321', '107422', '107725', '108121', '108222', '108323', '108525', '108828', '109123', '109325', '109830', '110007', '110411', '110613', '111009', '111312', '111413', '111716', '112112', '112314', '112516', '112920', '113215', '113619', '113922', '114217', '114318', '114419', '114621', '114823', '114924', '115017', '115219', '115320', '115825', '116524', '116726', '117122', '117324', '117930', '118124', '118528', '118730', '118932', '119126', '120212', '120515', '120717', '121416', '121618', '121921', '122317', '122620', '122822', '123117', '123420', '123521', '123824', '123925', '124220', '124422', '124624', '124826', '125525', '126325', '126628', '127327', '127630', '127933', '128026', '128127', '128632', '128935', '129028', '129129', '129331', '129634', '130013', '130316', '130417', '130619', '130821', '130922', '131217', '131419', '131722', '131823', '131924', '132017', '132118', '133019', '133827', '133928', '134021', '134223', '134324', '134425', '134728', '134829', '135225', '135528', '135730', '135932', '136227', '136732', '136833', '137027', '137128', '137229', '137633', '137936', '138231', '138534', '138837', '139233', '139637', '139839', '140319', '140824', '140925', '141119', '141826', '142828', '143426', '144125', '144428', '144832', '145127', '146129', '146331', '146432', '146533', '146937', '147030', '147737', '148032', '148133', '148335', '148840', '148941', '149236', '149337', '149539', '149741', '149842', '150625', '150726', '150928', '151223', '151425', '151526', '151627', '151728', '151829', '152831', '153025', '153227', '153429', '153631', '153833', '154229', '179245', '179346', '180129', '180432', '180735', '180836', '180937', '181131', '181232', '181636', '182032', '182436', '182739', '182840', '183034', '185139', '185341', '185442', '185846', '185947', '186141', '186444', '187143', '187547', '187850', '188347', '188448', '188751', '189349', '189450', '190031', '191033', '191336', '191437', '191942', '192035', '192136', '192540', '192641', '192843', '193239', '194140', '194645', '194746', '194847', '195041', '195647', '195849', '195950', '196144', '196346', '196750', '197348', '197550', '198249', '198350', '198451', '198653', '198855', '199150', '199251', '199453', '199655', '199958', '200008', '200614', '200917', '201111', '201414', '201818', '202113', '202719', '203418', '204016', '204319', '204420', '204622', '205725', '206222', '207123', '208024', '208125', '208226', '208327', '209127', '209228', '209329']
-n_subjects = 200
-measure = 'degree' # degree, eigenvector_centrality, closeness_centrality, pagerank_centrality, local_clustering, k_coreness
-behav = 'Fluid_intelligence' # Age_in_Yrs, BMI, Gender, DepressionScore, Fluid_intelligence
-demo = pd.read_excel('/Volumes/Elements/HCP_Motion/DemoData.xlsx', index_col='Subject')
-demo.index = demo.index.astype(str)
-behav_data = demo.loc[subjects[:n_subjects]]
-behav_data.fillna(behav_data.mean(), inplace=True)
-
-mean = []
-for roi in range(1, 30):
-    
-    len_roi = len(np.where(hcp.mmp.map_all[:59412] == roi)[0]) # only cortex
-
-    X_train = load_graph_measures('/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/fine/graph_measures_roi' + str(roi) + '_REST1_LR_CHA.pickle', measure, subjects[:n_subjects])
-    X_test = load_graph_measures('/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/fine/graph_measures_roi' + str(roi) + '_REST2_LR_CHA.pickle', measure, subjects[:n_subjects])
-    y_train = behav_data[behav]
-    y_test = behav_data[behav]
-    
-    mse, r2 = train_and_evaluate_model(X_train, y_train, X_test, y_test)
-    print(f'MSE: {mse:.3f}, L_ROI: {len_roi}')
-    #print(f'R^2: {r2:.3f}')
-    mean.append(mse)
-
-print(np.mean(mean))
-#%%
-# Choose which behavior you'd like to predict
-behav = 'Fluid_intelligence' # Age_in_Yrs, BMI, Gender, DepressionScore, Fluid_intelligence
-measure = 'degree' # degree, eigenvector_centrality, closeness_centrality, pagerank_centrality, local_clustering, k_coreness
-
-cpm_kwargs = {'r_thresh': 0.05, 'corr_type': 'pearson'}
-n_runs = 10
-
-mean = []
-for roi in range(1, 30):
-
-    data = load_graph_measures('/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/fine/graph_measures_roi' + str(roi) + '_REST2_LR_CHA.pickle', measure, subjects[:n_subjects])
-    
-    behav_obs_pred, all_masks = cpm_wrapper(data, behav_data, behav=behav, **cpm_kwargs)
-    
-    correlation = []
-    r_squared = []
-    mse = []
-    for i in range(n_runs):
-        behav_obs_pred, all_masks = cpm_wrapper(data, behav_data, behav=behav, **cpm_kwargs)
-        x = behav_obs_pred[behav + ' observed']
-        y = behav_obs_pred[behav + ' predicted (glm)']
-        correlation.append(sp.stats.pearsonr(x, y)[0])
-        r_squared.append(r2_score(x, y))
-        mse.append(mean_squared_error(x, y))
-    
-    #print(np.mean(correlation))
-    print(f'R^2: {np.mean(r_squared):.3f}')
-    #print(np.mean(mse))
-    mean.append(np.mean(mse))
-
-#print(np.mean(mean))
-#%%
-
-
-import numpy as np
-import brainconn
-from brainconn import degree, centrality, clustering, core, distance, modularity, utils, similarity
-import networkx as nx
-
-
-n_sbj = 30
-n_roi = 360
-
-# =============================================================================
-# load timeseries
-ts_rest1LR = np.load('/Volumes/Elements/Hyperalignment/HCP/results_30sbj/ts_mmp/ts_rest1LR_30sbj.npy') 
-ts_rest1RL = np.load('/Volumes/Elements/Hyperalignment/HCP/results_30sbj/ts_mmp/ts_rest1RL_30sbj.npy')
-ts_rest2LR = np.load('/Volumes/Elements/Hyperalignment/HCP/results_30sbj/ts_mmp/ts_rest2LR_30sbj.npy')
-ts_rest2RL = np.load('/Volumes/Elements/Hyperalignment/HCP/results_30sbj/ts_mmp/ts_rest2RL_30sbj.npy')
-ts_aligned_rest1LR = np.load('/Volumes/Elements/Hyperalignment/HCP/results_30sbj/ts_mmp/ts_aligned_rest1LR_30sbj.npy')
-ts_aligned_rest1RL = np.load('/Volumes/Elements/Hyperalignment/HCP/results_30sbj/ts_mmp/ts_aligned_rest1RL_30sbj.npy')
-ts_aligned_rest2LR = np.load('/Volumes/Elements/Hyperalignment/HCP/results_30sbj/ts_mmp/ts_aligned_rest2LR_30sbj.npy')
-ts_aligned_rest2RL = np.load('/Volumes/Elements/Hyperalignment/HCP/results_30sbj/ts_mmp/ts_aligned_rest2RL_30sbj.npy')
-
-#% CALCULATE CORRELATION (whole brain)
-from nilearn.connectome import ConnectivityMeasure
-correlation_measure = ConnectivityMeasure(kind='correlation') # kind{“correlation”, “partial correlation”, “tangent”, “covariance”, “precision”}, optional
-
-corr_rest1LR = abs(correlation_measure.fit_transform(ts_rest1LR))
-corr_rest1RL = abs(correlation_measure.fit_transform(ts_rest1RL))
-corr_rest2LR = abs(correlation_measure.fit_transform(ts_rest2LR))
-corr_rest2RL = abs(correlation_measure.fit_transform(ts_rest2RL))
-corr_aligned_rest1LR = abs(correlation_measure.fit_transform(ts_aligned_rest1LR))
-corr_aligned_rest1RL = abs(correlation_measure.fit_transform(ts_aligned_rest1RL))
-corr_aligned_rest2LR = abs(correlation_measure.fit_transform(ts_aligned_rest2LR))
-corr_aligned_rest2RL = abs(correlation_measure.fit_transform(ts_aligned_rest2RL))
-
-# remove the self-connections (zero diagonal) and create weighted graphs
-adj_wei = [[] for i in range(8)] # 8 sets (list of lists; wrong way -> adj_wei = [[]] * 8)
-adj_bin = [[] for i in range(8)]
-con_len = [[] for i in range(8)] # weighted connection-length matrix for 8 sets
-thld = 0.3 # threshold -> for binarization
-for k in range(n_sbj): 
-    np.fill_diagonal(corr_rest1LR[k], 0)
-    np.fill_diagonal(corr_rest1RL[k], 0)
-    np.fill_diagonal(corr_rest2LR[k], 0)
-    np.fill_diagonal(corr_rest2RL[k], 0)
-    np.fill_diagonal(corr_aligned_rest1LR[k], 0)
-    np.fill_diagonal(corr_aligned_rest1RL[k], 0)
-    np.fill_diagonal(corr_aligned_rest2LR[k], 0)
-    np.fill_diagonal(corr_aligned_rest2RL[k], 0)
-    # weighted
-    adj_wei[0].append(corr_rest1LR[k])
-    adj_wei[1].append(corr_rest1RL[k])
-    adj_wei[2].append(corr_rest2LR[k])
-    adj_wei[3].append(corr_rest2RL[k])
-    adj_wei[4].append(corr_aligned_rest1LR[k])
-    adj_wei[5].append(corr_aligned_rest1RL[k])
-    adj_wei[6].append(corr_aligned_rest2LR[k])
-    adj_wei[7].append(corr_aligned_rest2RL[k])
-    # weighted connection-length matrix (connection lengths is needed prior to computation of weighted distance-based measures, such as distance and betweenness centrality)
-    # L_ij = 1/W_ij for all nonzero L_ij; higher connection weights intuitively correspond to shorter lengths
-    con_len[0].append(utils.weight_conversion(adj_wei[0][k], 'lengths', copy=True))
-    con_len[1].append(utils.weight_conversion(adj_wei[1][k], 'lengths', copy=True))
-    con_len[2].append(utils.weight_conversion(adj_wei[2][k], 'lengths', copy=True))
-    con_len[3].append(utils.weight_conversion(adj_wei[3][k], 'lengths', copy=True))
-    con_len[4].append(utils.weight_conversion(adj_wei[4][k], 'lengths', copy=True))
-    con_len[5].append(utils.weight_conversion(adj_wei[5][k], 'lengths', copy=True))
-    con_len[6].append(utils.weight_conversion(adj_wei[6][k], 'lengths', copy=True))
-    con_len[7].append(utils.weight_conversion(adj_wei[7][k], 'lengths', copy=True))
-    # binary
-    adj_bin[0].append(brainconn.utils.binarize(brainconn.utils.threshold_proportional(adj_wei[0][k], thld, copy=True)))
-    adj_bin[1].append(brainconn.utils.binarize(brainconn.utils.threshold_proportional(adj_wei[1][k], thld, copy=True)))
-    adj_bin[2].append(brainconn.utils.binarize(brainconn.utils.threshold_proportional(adj_wei[2][k], thld, copy=True)))
-    adj_bin[3].append(brainconn.utils.binarize(brainconn.utils.threshold_proportional(adj_wei[3][k], thld, copy=True)))
-    adj_bin[4].append(brainconn.utils.binarize(brainconn.utils.threshold_proportional(adj_wei[4][k], thld, copy=True)))
-    adj_bin[5].append(brainconn.utils.binarize(brainconn.utils.threshold_proportional(adj_wei[5][k], thld, copy=True)))
-    adj_bin[6].append(brainconn.utils.binarize(brainconn.utils.threshold_proportional(adj_wei[6][k], thld, copy=True)))
-    adj_bin[7].append(brainconn.utils.binarize(brainconn.utils.threshold_proportional(adj_wei[7][k], thld, copy=True)))
-   
-# define global measures
-lam = np.zeros((8,n_sbj)) # lambda (characteristic path length)
-glb = np.zeros((8,n_sbj)) # global efficieny
-clc = np.zeros((8,n_sbj)) # global clustering coefficients
-tra = np.zeros((8,n_sbj)) # Transitivity
-ass = np.zeros((8,n_sbj)) # assortativity
-mod = np.zeros((8,n_sbj)) # modularity
-
-# compute global measures
-for i in range(8):
-    for k in range(n_sbj):                
-        dis = distance.distance_wei(con_len[i][k])[0] # TIME CONSUMING  
-        lam[i,k] = distance.charpath(dis, include_diagonal=False, include_infinite=False)[0]
-        glb[i,k] = distance.charpath(dis, include_diagonal=False, include_infinite=False)[1]
-        #glb[i,k] = distance.efficiency_wei(adj_wei[i][k], local=False) # time consuming -> for binary matrices is much faster
-        #glb[i,k] = distance.efficiency_bin(adj_bin[i][k], local=False)
-        clc[i,k] = np.mean(clustering.clustering_coef_bu(adj_bin[i][k]))
-        tra[i,k] = np.mean(clustering.transitivity_bu(adj_bin[i][k]))
-        ass[i,k] = core.assortativity_bin(adj_bin[i][k], flag=0) # 0: undirected graph
-        mod[i,k] = modularity.modularity_louvain_und(adj_bin[i][k], gamma=1, hierarchy=False, seed=None)[1] 
-    print(i)      
-      
-# define/compute local measures  
-deg_l = np.zeros((8,30,360))
-stg_l = np.zeros((8,30,360))
-eig_l = np.zeros((8,30,360))
-clc_l = np.zeros((8,30,360))
-eff_l = np.zeros((8,30,360))
-#par_l = np.zeros((8,30,360))
-#zsc_l = np.zeros((8,30,360))
-#rch_l = np.zeros((8,30,360))
-kco_l = np.zeros((8,30,360))        
-for i in range(8):
-    for k in range(n_sbj): 
-        deg_l[i,k,:] = degree.degrees_und(adj_bin[i][k])
-        stg_l[i,k,:] = degree.strengths_und(adj_wei[i][k])
-        eig_l[i,k,:] = centrality.eigenvector_centrality_und(adj_bin[i][k])
-        clc_l[i,k,:] = clustering.clustering_coef_bu(adj_bin[i][k])
-        #eff_l[i,k,:] = distance.efficiency_wei(adj_wei[i][k], local=True) # [Time consuming]^n: 
-        eff_l[i,k,:] = distance.efficiency_bin(adj_bin[i][k], local=True) # [Time consuming]^n: 
-        #par_l[i,k,:] = centrality.participation_coef(adj_bin[i][k], degree='undirected')
-        #zsc_l[i,k,:] = centrality.module_degree_zscore(adj_bin[i][k], flag=0) # 0: undirected graph
-        #rch_l[i,k,:] = core.rich_club_bu(adj_bin[i][k])[0]
-        kco_l[i,k,:] = centrality.kcoreness_centrality_bu(adj_bin[i][k])[0]
-    print(i)     
-
-# find the indices of 360 regions based on 12 networks of cole/anticevic
-import hcp_utils as hcp
-index = np.zeros((360,))
-for roi in range(1,361):
-    r = roi-1
-    index_parcel = np.where(hcp.ca_parcels.map_all==roi)[0][0]
-    index[r] = hcp.ca_network.map_all[index_parcel]
-# create sorted index    
-index_sorted = index.argsort(kind='stable')
-
-# sort local measures based on the sorted index
-deg_l = deg_l[:,:,index_sorted]
-stg_l = stg_l[:,:,index_sorted]
-eig_l = eig_l[:,:,index_sorted]
-clc_l = clc_l[:,:,index_sorted]
-eff_l = eff_l[:,:,index_sorted]
-#par_l = par_l[:,:,index_sorted]
-#zsc_l = zsc_l[:,:,index_sorted]
-#rch_l = rch_l[:,:,index_sorted]
-kco_l = kco_l[:,:,index_sorted]
-
-# regression analysis based on local patterns
-# https://scikit-learn.org/stable/auto_examples/cross_decomposition/plot_pcr_vs_pls.html#sphx-glr-auto-examples-cross-decomposition-plot-pcr-vs-pls-py
-# Loading questionnaires's indices
-IQ = []
-file_in = open('/Volumes/Elements/Hyperalignment/HCP/IQ.txt', 'r')
-#file_in = open('/users/ffarahan/IQ.txt', 'r')
-for z in file_in.read().split('\n'):
-    IQ.append(float(z))
-
-questionnaire = {'IQ': np.array(IQ)}
-questionnaire_list = ['IQ']
-# Set up a correlation vector (measure * Q_index) corresponding to a value for each region in the parcellation.
-index = 'IQ' # Questionnaire index {AM, ESS, PW}
-
-from sklearn.linear_model import LinearRegression, Ridge, RidgeCV
-from sklearn.metrics import mean_squared_error, r2_score
-
-local_measure = [deg_l, stg_l, eig_l, clc_l, eff_l, kco_l] ; num = 6
-mse_reg, r2_reg = [[] for i in range(len(local_measure))], [[] for i in range(len(local_measure))] # number of measures
-pred_set = np.array([[0, 1], [0, 2], [0, 3], [4, 5], [4, 6], [4, 7]])
-for i in range(len(local_measure)):
-    for s in range(np.shape(pred_set)[0]):
-        # Training/testing sets and target variable
-        X_train, y_train = local_measure[i][pred_set[s][0],:,:], questionnaire[index]
-        X_test, y_test = local_measure[i][pred_set[s][1],:,:], questionnaire[index]        
-        # Create linear regression object
-        reg = Ridge(alpha=1.0) # Linear least squares with l2 regularization        
-        # Train the model using the training sets
-        reg.fit(X_train, y_train)        
-        # Make predictions using the testing set
-        y_pred_reg = reg.predict(X_test)       
-        # The mean squared error
-        mse_reg[i].append(mean_squared_error(y_test, y_pred_reg))        
-        # The coefficient of determination: 1 is perfect prediction
-        r2_reg[i].append(r2_score(y_test, y_pred_reg))
-        
-#%%
-# catplot (multiple barplot)
-import seaborn as sns
-import pandas as pd
-import matplotlib.pyplot as plt
-sns.set(style="whitegrid")
-num = 6 # 6 measures
-data = np.reshape(mse_reg, (num*6,))
-df = pd.DataFrame(data=data, columns=["MSE"]) # index=rows
-metric = np.repeat(['Degree', 'Strength', 'Eigenvector Centrality', 'Clustering Coefficient', 'Local Efficiency', 'K-coreness Centrality'], 6, axis=0) # 5 measures
-df['Measure'] = metric
-group = np.tile(['Test 1', 'Test 2', 'Test 3'], 2*num)
-df['Prediction set'] = group  
-alignment = np.tile(['MSMAll', 'MSMAll', 'MSMAll', 'CHA', 'CHA', 'CHA'], num)
-df['Alignment'] = alignment 
-
-sns.set(style="whitegrid")
-ax = sns.catplot(x="Prediction set", y="MSE",
-                hue="Alignment", col="Measure",
-                data=df, kind="bar", legend=False, legend_out=False,
-                height=3.5, aspect=1,
-                palette=['#FFD700','#7F00FF'])
-(ax.set_titles("{col_name}"))
-   #.set_xticklabels(["T1", "T2", "T3"])
-   #.set(ylim=(0, 1))
-   #.despine(left=True)) 
-plt.tight_layout()
-plt.legend(loc='upper left')
-plt.subplots_adjust(wspace = 0.15) # wspace=None, hspace=None
-plt.savefig('/Users/Farzad/Desktop/Figures/catplot_global_coarse.pdf') 
-plt.show()        
-
-#%% boxplot (global measures, coarse scale)
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import string
 
+measure_dir = '/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/coarse/'
+sets = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
+        'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
+
+# If having low/high ISC grouping
+group_labels_array = np.array(group_labels)
+high_isc_mask = group_labels_array == "Q4"
+low_isc_mask = group_labels_array == "Q1"
+
+# Dictionary to store all measures
+coarse_measures = {}
+
+for s in sets:
+    filepath = os.path.join(measure_dir, f'graph_measures_{s}.pickle')
+    with open(filepath, 'rb') as f:
+        measures = pickle.load(f)
+        coarse_measures[s] = measures
+
 sns.set_style("white", {'axes.grid':False})
 
-datasetA1 = lam[[1,2,3],:].T; datasetA2 = lam[[5,6,7],:].T
-datasetB1 = glb[[1,2,3],:].T; datasetB2 = glb[[5,6,7],:].T
-datasetC1 = clc[[1,2,3],:].T; datasetC2 = clc[[5,6,7],:].T
-datasetD1 = tra[[1,2,3],:].T; datasetD2 = tra[[5,6,7],:].T
-datasetE1 = ass[[1,2,3],:].T; datasetE2 = ass[[5,6,7],:].T
-datasetF1 = mod[[1,2,3],:].T; datasetF2 = mod[[5,6,7],:].T
+datasetA1, datasetB1, datasetC1, datasetD1, datasetE1, datasetF1 = [], [], [], [], [], []
+for s in sets[0:2]: # MSM (train + test)
+    path_length = coarse_measures[s]['path_length']
+    global_clustering = coarse_measures[s]['global_clustering']
+    global_efficiency = coarse_measures[s]['global_efficiency']
+    assortativity = coarse_measures[s]['assortativity']
+    modularity = coarse_measures[s]['modularity']
+    small_worldness = coarse_measures[s]['small_worldness']
+    # defining datasets     
+    datasetA1.append(path_length)
+    datasetB1.append(global_clustering)
+    datasetC1.append(global_efficiency)
+    datasetD1.append(assortativity)
+    datasetE1.append(modularity)
+    datasetF1.append(small_worldness)
+# Convert the lists to NumPy arrays
+datasetA1 = np.array(datasetA1).T
+datasetB1 = np.array(datasetB1).T
+datasetC1 = np.array(datasetC1).T
+datasetD1 = np.array(datasetD1).T
+datasetE1 = np.array(datasetE1).T
+datasetF1 = np.array(datasetF1).T
 
-ticks = ['Test 1', 'Test 2', 'Test 3']
+datasetA2, datasetB2, datasetC2, datasetD2, datasetE2, datasetF2 = [], [], [], [], [], []
+for s in sets[4:6]: # CHA (train + test)
+    path_length = coarse_measures[s]['path_length']
+    global_clustering = coarse_measures[s]['global_clustering']
+    global_efficiency = coarse_measures[s]['global_efficiency']
+    assortativity = coarse_measures[s]['assortativity']
+    modularity = coarse_measures[s]['modularity']
+    small_worldness = coarse_measures[s]['small_worldness']
+    # defining datasets     
+    datasetA2.append(path_length)
+    datasetB2.append(global_clustering)
+    datasetC2.append(global_efficiency)
+    datasetD2.append(assortativity)
+    datasetE2.append(modularity)
+    datasetF2.append(small_worldness)
+# Convert the lists to NumPy arrays
+datasetA2 = np.array(datasetA2).T
+datasetB2 = np.array(datasetB2).T
+datasetC2 = np.array(datasetC2).T
+datasetD2 = np.array(datasetD2).T
+datasetE2 = np.array(datasetE2).T
+datasetF2 = np.array(datasetF2).T
+
+datasetA3, datasetB3, datasetC3, datasetD3, datasetE3, datasetF3 = [], [], [], [], [], []
+for s in sets[4:6]: # CHA (train + test)
+    path_length = coarse_measures[s]['path_length']
+    global_clustering = coarse_measures[s]['global_clustering']
+    global_efficiency = coarse_measures[s]['global_efficiency']
+    assortativity = coarse_measures[s]['assortativity']
+    modularity = coarse_measures[s]['modularity']
+    small_worldness = coarse_measures[s]['small_worldness']
+    # defining datasets     
+    datasetA3.append(path_length)
+    datasetB3.append(global_clustering)
+    datasetC3.append(global_efficiency)
+    datasetD3.append(assortativity)
+    datasetE3.append(modularity)
+    datasetF3.append(small_worldness)
+# Convert the lists to NumPy arrays (Use the mask to select a subset of arrays)
+datasetA3 = np.array(datasetA3).T[low_isc_mask]
+datasetB3 = np.array(datasetB3).T[low_isc_mask]
+datasetC3 = np.array(datasetC3).T[low_isc_mask]
+datasetD3 = np.array(datasetD3).T[low_isc_mask]
+datasetE3 = np.array(datasetE3).T[low_isc_mask]
+datasetF3 = np.array(datasetF3).T[low_isc_mask]
+
+datasetA4, datasetB4, datasetC4, datasetD4, datasetE4, datasetF4 = [], [], [], [], [], []
+for s in sets[4:6]: # CHA (train + test)
+    path_length = coarse_measures[s]['path_length']
+    global_clustering = coarse_measures[s]['global_clustering']
+    global_efficiency = coarse_measures[s]['global_efficiency']
+    assortativity = coarse_measures[s]['assortativity']
+    modularity = coarse_measures[s]['modularity']
+    small_worldness = coarse_measures[s]['small_worldness']
+    # defining datasets     
+    datasetA4.append(path_length)
+    datasetB4.append(global_clustering)
+    datasetC4.append(global_efficiency)
+    datasetD4.append(assortativity)
+    datasetE4.append(modularity)
+    datasetF4.append(small_worldness)
+# Convert the lists to NumPy arrays (Use the mask to select a subset of arrays)
+datasetA4 = np.array(datasetA4).T[high_isc_mask]
+datasetB4 = np.array(datasetB4).T[high_isc_mask]
+datasetC4 = np.array(datasetC4).T[high_isc_mask]
+datasetD4 = np.array(datasetD4).T[high_isc_mask]
+datasetE4 = np.array(datasetE4).T[high_isc_mask]
+datasetF4 = np.array(datasetF4).T[high_isc_mask]
+
+ticks = ['Train (REST1_LR)', 'Test (REST1_RL)']
 
 dfA1 = pd.DataFrame(datasetA1, columns=ticks)
 dfA2 = pd.DataFrame(datasetA2, columns=ticks)
+dfA3 = pd.DataFrame(datasetA3, columns=ticks)
+dfA4 = pd.DataFrame(datasetA4, columns=ticks)
 dfB1 = pd.DataFrame(datasetB1, columns=ticks)
 dfB2 = pd.DataFrame(datasetB2, columns=ticks)
+dfB3 = pd.DataFrame(datasetB3, columns=ticks)
+dfB4 = pd.DataFrame(datasetB4, columns=ticks)
 dfC1 = pd.DataFrame(datasetC1, columns=ticks)
 dfC2 = pd.DataFrame(datasetC2, columns=ticks)
+dfC3 = pd.DataFrame(datasetC3, columns=ticks)
+dfC4 = pd.DataFrame(datasetC4, columns=ticks)
 dfD1 = pd.DataFrame(datasetD1, columns=ticks)
 dfD2 = pd.DataFrame(datasetD2, columns=ticks)
+dfD3 = pd.DataFrame(datasetD3, columns=ticks)
+dfD4 = pd.DataFrame(datasetD4, columns=ticks)
 dfE1 = pd.DataFrame(datasetE1, columns=ticks)
 dfE2 = pd.DataFrame(datasetE2, columns=ticks)
+dfE3 = pd.DataFrame(datasetE3, columns=ticks)
+dfE4 = pd.DataFrame(datasetE4, columns=ticks)
 dfF1 = pd.DataFrame(datasetF1, columns=ticks)
 dfF2 = pd.DataFrame(datasetF2, columns=ticks)
+dfF3 = pd.DataFrame(datasetF3, columns=ticks)
+dfF4 = pd.DataFrame(datasetF4, columns=ticks)
 
 names = []
-valsA1, xsA1, valsA2, xsA2 = [],[], [],[]
-valsB1, xsB1, valsB2, xsB2 = [],[], [],[]
-valsC1, xsC1, valsC2, xsC2 = [],[], [],[]
-valsD1, xsD1, valsD2, xsD2 = [],[], [],[]
-valsE1, xsE1, valsE2, xsE2 = [],[], [],[]
-valsF1, xsF1, valsF2, xsF2 = [],[], [],[]
+valsA1, xsA1, valsA2, xsA2, valsA3, xsA3, valsA4, xsA4 = [], [], [], [], [], [], [], []
+valsB1, xsB1, valsB2, xsB2, valsB3, xsB3, valsB4, xsB4 = [], [], [], [], [], [], [], []
+valsC1, xsC1, valsC2, xsC2, valsC3, xsC3, valsC4, xsC4 = [], [], [], [], [], [], [], []
+valsD1, xsD1, valsD2, xsD2, valsD3, xsD3, valsD4, xsD4 = [], [], [], [], [], [], [], []
+valsE1, xsE1, valsE2, xsE2, valsE3, xsE3, valsE4, xsE4 = [], [], [], [], [], [], [], []
+valsF1, xsF1, valsF2, xsF2, valsF3, xsF3, valsF4, xsF4 = [], [], [], [], [], [], [], []
 
 for i, col in enumerate(dfA1.columns):
     valsA1.append(dfA1[col].values)
     valsA2.append(dfA2[col].values)
+    valsA3.append(dfA3[col].values)
+    valsA4.append(dfA4[col].values)
     valsB1.append(dfB1[col].values)
     valsB2.append(dfB2[col].values)
+    valsB3.append(dfB3[col].values)
+    valsB4.append(dfB4[col].values)
     valsC1.append(dfC1[col].values)
     valsC2.append(dfC2[col].values)
+    valsC3.append(dfC3[col].values)
+    valsC4.append(dfC4[col].values)
     valsD1.append(dfD1[col].values)
     valsD2.append(dfD2[col].values)
+    valsD3.append(dfD3[col].values)
+    valsD4.append(dfD4[col].values)
     valsE1.append(dfE1[col].values)
     valsE2.append(dfE2[col].values)
+    valsE3.append(dfE3[col].values)
+    valsE4.append(dfE4[col].values)
     valsF1.append(dfF1[col].values)
     valsF2.append(dfF2[col].values)
+    valsF3.append(dfF3[col].values)
+    valsF4.append(dfF4[col].values)
     names.append(col)
     # Add some random "jitter" to the data points
-    xsA1.append(np.random.normal(i*3-0.45, 0.07, dfA1[col].values.shape[0]))
-    xsA2.append(np.random.normal(i*3+0.45, 0.07, dfA2[col].values.shape[0]))
-    xsB1.append(np.random.normal(i*3-0.45, 0.07, dfB1[col].values.shape[0]))
-    xsB2.append(np.random.normal(i*3+0.45, 0.07, dfB2[col].values.shape[0]))
-    xsC1.append(np.random.normal(i*3-0.45, 0.07, dfC1[col].values.shape[0]))
-    xsC2.append(np.random.normal(i*3+0.45, 0.07, dfC2[col].values.shape[0]))
-    xsD1.append(np.random.normal(i*3-0.45, 0.07, dfD1[col].values.shape[0]))
-    xsD2.append(np.random.normal(i*3+0.45, 0.07, dfD2[col].values.shape[0]))
-    xsE1.append(np.random.normal(i*3-0.45, 0.07, dfE1[col].values.shape[0]))
-    xsE2.append(np.random.normal(i*3+0.45, 0.07, dfE2[col].values.shape[0]))
-    xsF1.append(np.random.normal(i*3-0.45, 0.07, dfF1[col].values.shape[0]))
-    xsF2.append(np.random.normal(i*3+0.45, 0.07, dfF2[col].values.shape[0]))
+    xsA1.append(np.random.normal(i*3-0.75, 0.05, dfA1[col].values.shape[0]))
+    xsA2.append(np.random.normal(i*3-0.25, 0.05, dfA2[col].values.shape[0]))
+    xsA3.append(np.random.normal(i*3+0.25, 0.05, dfA3[col].values.shape[0]))
+    xsA4.append(np.random.normal(i*3+0.75, 0.05, dfA4[col].values.shape[0]))
+    xsB1.append(np.random.normal(i*3-0.75, 0.05, dfB1[col].values.shape[0]))
+    xsB2.append(np.random.normal(i*3-0.25, 0.05, dfB2[col].values.shape[0]))
+    xsB3.append(np.random.normal(i*3+0.25, 0.05, dfB3[col].values.shape[0]))
+    xsB4.append(np.random.normal(i*3+0.75, 0.05, dfB4[col].values.shape[0]))
+    xsC1.append(np.random.normal(i*3-0.75, 0.05, dfC1[col].values.shape[0]))
+    xsC2.append(np.random.normal(i*3-0.25, 0.05, dfC2[col].values.shape[0]))
+    xsC3.append(np.random.normal(i*3+0.25, 0.05, dfC3[col].values.shape[0]))
+    xsC4.append(np.random.normal(i*3+0.75, 0.05, dfC4[col].values.shape[0]))
+    xsD1.append(np.random.normal(i*3-0.75, 0.05, dfD1[col].values.shape[0]))
+    xsD2.append(np.random.normal(i*3-0.25, 0.05, dfD2[col].values.shape[0]))
+    xsD3.append(np.random.normal(i*3+0.25, 0.05, dfD3[col].values.shape[0]))
+    xsD4.append(np.random.normal(i*3+0.75, 0.05, dfD4[col].values.shape[0]))
+    xsE1.append(np.random.normal(i*3-0.75, 0.05, dfE1[col].values.shape[0]))
+    xsE2.append(np.random.normal(i*3-0.25, 0.05, dfE2[col].values.shape[0]))
+    xsE3.append(np.random.normal(i*3+0.25, 0.05, dfE3[col].values.shape[0]))
+    xsE4.append(np.random.normal(i*3+0.75, 0.05, dfE4[col].values.shape[0]))
+    xsF1.append(np.random.normal(i*3-0.75, 0.05, dfF1[col].values.shape[0]))
+    xsF2.append(np.random.normal(i*3-0.25, 0.05, dfF2[col].values.shape[0]))
+    xsF3.append(np.random.normal(i*3+0.25, 0.05, dfF3[col].values.shape[0]))
+    xsF4.append(np.random.normal(i*3+0.75, 0.05, dfF4[col].values.shape[0]))
 
-fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(nrows=2, ncols=3, sharex=False, sharey=False, figsize=(12, 7))
+fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(nrows=2, ncols=3, sharex=False, sharey=False, figsize=(14, 8))
 
-bpA1 = ax1.boxplot(valsA1, labels=names, positions=np.array(range(len(datasetA1[0])))*3-0.45, sym='', widths=.65)
-bpA2 = ax1.boxplot(valsA2, labels=names, positions=np.array(range(len(datasetA2[0])))*3+0.45, sym='', widths=.65)
-bpB1 = ax2.boxplot(valsB1, labels=names, positions=np.array(range(len(datasetB1[0])))*3-0.45, sym='', widths=.65)
-bpB2 = ax2.boxplot(valsB2, labels=names, positions=np.array(range(len(datasetB2[0])))*3+0.45, sym='', widths=.65)
-bpC1 = ax3.boxplot(valsC1, labels=names, positions=np.array(range(len(datasetC1[0])))*3-0.45, sym='', widths=.65)
-bpC2 = ax3.boxplot(valsC2, labels=names, positions=np.array(range(len(datasetC2[0])))*3+0.45, sym='', widths=.65)
-bpD1 = ax4.boxplot(valsD1, labels=names, positions=np.array(range(len(datasetD1[0])))*3-0.45, sym='', widths=.65)
-bpD2 = ax4.boxplot(valsD2, labels=names, positions=np.array(range(len(datasetD2[0])))*3+0.45, sym='', widths=.65)
-bpE1 = ax5.boxplot(valsE1, labels=names, positions=np.array(range(len(datasetE1[0])))*3-0.45, sym='', widths=.65)
-bpE2 = ax5.boxplot(valsE2, labels=names, positions=np.array(range(len(datasetE2[0])))*3+0.45, sym='', widths=.65)
-bpF1 = ax6.boxplot(valsF1, labels=names, positions=np.array(range(len(datasetF1[0])))*3-0.45, sym='', widths=.65)
-bpF2 = ax6.boxplot(valsF2, labels=names, positions=np.array(range(len(datasetF2[0])))*3+0.45, sym='', widths=.65)
+bpA1 = ax1.boxplot(valsA1, labels=names, positions=np.array(range(len(datasetA1[0])))*3-0.75, sym='', widths=.35)
+bpA2 = ax1.boxplot(valsA2, labels=names, positions=np.array(range(len(datasetA2[0])))*3-0.25, sym='', widths=.35)
+bpA3 = ax1.boxplot(valsA3, labels=names, positions=np.array(range(len(datasetA3[0])))*3+0.25, sym='', widths=.35)
+bpA4 = ax1.boxplot(valsA4, labels=names, positions=np.array(range(len(datasetA4[0])))*3+0.75, sym='', widths=.35)
+bpB1 = ax2.boxplot(valsB1, labels=names, positions=np.array(range(len(datasetB1[0])))*3-0.75, sym='', widths=.35)
+bpB2 = ax2.boxplot(valsB2, labels=names, positions=np.array(range(len(datasetB2[0])))*3-0.25, sym='', widths=.35)
+bpB3 = ax2.boxplot(valsB3, labels=names, positions=np.array(range(len(datasetB3[0])))*3+0.25, sym='', widths=.35)
+bpB4 = ax2.boxplot(valsB4, labels=names, positions=np.array(range(len(datasetB4[0])))*3+0.75, sym='', widths=.35)
+bpC1 = ax3.boxplot(valsC1, labels=names, positions=np.array(range(len(datasetC1[0])))*3-0.75, sym='', widths=.35)
+bpC2 = ax3.boxplot(valsC2, labels=names, positions=np.array(range(len(datasetC2[0])))*3-0.25, sym='', widths=.35)
+bpC3 = ax3.boxplot(valsC3, labels=names, positions=np.array(range(len(datasetC3[0])))*3+0.25, sym='', widths=.35)
+bpC4 = ax3.boxplot(valsC4, labels=names, positions=np.array(range(len(datasetC4[0])))*3+0.75, sym='', widths=.35)
+bpD1 = ax4.boxplot(valsD1, labels=names, positions=np.array(range(len(datasetD1[0])))*3-0.75, sym='', widths=.35)
+bpD2 = ax4.boxplot(valsD2, labels=names, positions=np.array(range(len(datasetD2[0])))*3-0.25, sym='', widths=.35)
+bpD3 = ax4.boxplot(valsD3, labels=names, positions=np.array(range(len(datasetD3[0])))*3+0.25, sym='', widths=.35)
+bpD4 = ax4.boxplot(valsD4, labels=names, positions=np.array(range(len(datasetD4[0])))*3+0.75, sym='', widths=.35)
+bpE1 = ax5.boxplot(valsE1, labels=names, positions=np.array(range(len(datasetE1[0])))*3-0.75, sym='', widths=.35)
+bpE2 = ax5.boxplot(valsE2, labels=names, positions=np.array(range(len(datasetE2[0])))*3-0.25, sym='', widths=.35)
+bpE3 = ax5.boxplot(valsE3, labels=names, positions=np.array(range(len(datasetE3[0])))*3+0.25, sym='', widths=.35)
+bpE4 = ax5.boxplot(valsE4, labels=names, positions=np.array(range(len(datasetE4[0])))*3+0.75, sym='', widths=.35)
+bpF1 = ax6.boxplot(valsF1, labels=names, positions=np.array(range(len(datasetF1[0])))*3-0.75, sym='', widths=.35)
+bpF2 = ax6.boxplot(valsF2, labels=names, positions=np.array(range(len(datasetF2[0])))*3-0.25, sym='', widths=.35)
+bpF3 = ax6.boxplot(valsF3, labels=names, positions=np.array(range(len(datasetF3[0])))*3+0.25, sym='', widths=.35)
+bpF4 = ax6.boxplot(valsF4, labels=names, positions=np.array(range(len(datasetF4[0])))*3+0.75, sym='', widths=.35)
 # Optional: change the color of 'boxes', 'whiskers', 'caps', 'medians', and 'fliers'
-plt.setp(bpA1['medians'], color='r') # or color='#D7191C' ...
+plt.setp(bpA1['medians'], linewidth=1, linestyle='-', color='r') # or color='#D7191C' ...
 plt.setp(bpA2['medians'], linewidth=1, linestyle='-', color='r')
-plt.setp(bpB1['medians'], color='r')
+plt.setp(bpA3['medians'], linewidth=1, linestyle='-', color='r')
+plt.setp(bpA4['medians'], linewidth=1, linestyle='-', color='r')
+plt.setp(bpB1['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpB2['medians'], linewidth=1, linestyle='-', color='r')
-plt.setp(bpC1['medians'], color='r')
+plt.setp(bpB3['medians'], linewidth=1, linestyle='-', color='r')
+plt.setp(bpB4['medians'], linewidth=1, linestyle='-', color='r')
+plt.setp(bpC1['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpC2['medians'], linewidth=1, linestyle='-', color='r')
-plt.setp(bpD1['medians'], color='r')
+plt.setp(bpC3['medians'], linewidth=1, linestyle='-', color='r')
+plt.setp(bpC4['medians'], linewidth=1, linestyle='-', color='r')
+plt.setp(bpD1['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpD2['medians'], linewidth=1, linestyle='-', color='r')
-plt.setp(bpE1['medians'], color='r')
+plt.setp(bpD3['medians'], linewidth=1, linestyle='-', color='r')
+plt.setp(bpD4['medians'], linewidth=1, linestyle='-', color='r')
+plt.setp(bpE1['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpE2['medians'], linewidth=1, linestyle='-', color='r')
-plt.setp(bpF1['medians'], color='r')
+plt.setp(bpE3['medians'], linewidth=1, linestyle='-', color='r')
+plt.setp(bpE4['medians'], linewidth=1, linestyle='-', color='r')
+plt.setp(bpF1['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpF2['medians'], linewidth=1, linestyle='-', color='r')
+plt.setp(bpF3['medians'], linewidth=1, linestyle='-', color='r')
+plt.setp(bpF4['medians'], linewidth=1, linestyle='-', color='r')
 
 palette = ['r', 'g', 'b', 'y', 'm', 'c', 'k', 'tan', 'orchid', 'cyan', 'gold', 'crimson']
 
-for xA1, xA2, valA1, valA2, c in zip(xsA1, xsA2, valsA1, valsA2, palette):
-    ax1.scatter(xA1, valA1, alpha=0.7, color='#FFD700') # plt.plot(xA1, valA1, 'r.', alpha=0.4)
-    ax1.scatter(xA2, valA2, alpha=0.7, color='#7F00FF')
+for xA1, xA2, xA3, xA4, valA1, valA2, valA3, valA4, c in zip(xsA1, xsA2, xsA3, xsA4, valsA1, valsA2, valsA3, valsA4, palette):
+    ax1.scatter(xA1, valA1, alpha=0.5, color='#FFD700', s=10) # plt.plot(xA1, valA1, 'r.', alpha=0.4)
+    ax1.scatter(xA2, valA2, alpha=0.5, color='#7F00FF', s=10)
+    ax1.scatter(xA3, valA3, alpha=0.5, color='#FF007F', s=10)
+    ax1.scatter(xA4, valA4, alpha=0.5, color='#007FFF', s=10)
     
-for xB1, xB2, valB1, valB2, c in zip(xsB1, xsB2, valsB1, valsB2, palette):
-    ax2.scatter(xB1, valB1, alpha=0.7, color='#FFD700')
-    ax2.scatter(xB2, valB2, alpha=0.7, color='#7F00FF')   
+for xB1, xB2, xB3, xB4, valB1, valB2, valB3, valB4, c in zip(xsB1, xsB2, xsB3, xsB4, valsB1, valsB2, valsB3, valsB4, palette):
+    ax2.scatter(xB1, valB1, alpha=0.5, color='#FFD700', s=10)
+    ax2.scatter(xB2, valB2, alpha=0.5, color='#7F00FF', s=10)   
+    ax2.scatter(xB3, valB3, alpha=0.5, color='#FF007F', s=10)
+    ax2.scatter(xB4, valB4, alpha=0.5, color='#007FFF', s=10) 
     
-for xC1, xC2, valC1, valC2, c in zip(xsC1, xsC2, valsC1, valsC2, palette):
-    ax3.scatter(xC1, valC1, alpha=0.7, color='#FFD700')
-    ax3.scatter(xC2, valC2, alpha=0.7, color='#7F00FF') 
+for xC1, xC2, xC3, xC4, valC1, valC2, valC3, valC4, c in zip(xsC1, xsC2, xsC3, xsC4, valsC1, valsC2, valsC3, valsC4, palette):
+    ax3.scatter(xC1, valC1, alpha=0.5, color='#FFD700', s=10)
+    ax3.scatter(xC2, valC2, alpha=0.5, color='#7F00FF', s=10) 
+    ax3.scatter(xC3, valC3, alpha=0.5, color='#FF007F', s=10)
+    ax3.scatter(xC4, valC4, alpha=0.5, color='#007FFF', s=10) 
     
-for xD1, xD2, valD1, valD2, c in zip(xsD1, xsD2, valsD1, valsD2, palette):
-    ax4.scatter(xD1, valD1, alpha=0.7, color='#FFD700')
-    ax4.scatter(xD2, valD2, alpha=0.7, color='#7F00FF')     
+for xD1, xD2, xD3, xD4, valD1, valD2, valD3, valD4, c in zip(xsD1, xsD2, xsD3, xsD4, valsD1, valsD2, valsD3, valsD4, palette):
+    ax4.scatter(xD1, valD1, alpha=0.5, color='#FFD700', s=10)
+    ax4.scatter(xD2, valD2, alpha=0.5, color='#7F00FF', s=10) 
+    ax4.scatter(xD3, valD3, alpha=0.5, color='#FF007F', s=10)
+    ax4.scatter(xD4, valD4, alpha=0.5, color='#007FFF', s=10)    
 
-for xE1, xE2, valE1, valE2, c in zip(xsE1, xsE2, valsE1, valsE2, palette):
-    ax5.scatter(xE1, valE1, alpha=0.7, color='#FFD700')
-    ax5.scatter(xE2, valE2, alpha=0.7, color='#7F00FF') 
+for xE1, xE2, xE3, xE4, valE1, valE2, valE3, valE4, c in zip(xsE1, xsE2, xsE3, xsE4, valsE1, valsE2, valsE3, valsE4, palette):
+    ax5.scatter(xE1, valE1, alpha=0.5, color='#FFD700', s=10)
+    ax5.scatter(xE2, valE2, alpha=0.5, color='#7F00FF', s=10) 
+    ax5.scatter(xE3, valE3, alpha=0.5, color='#FF007F', s=10)
+    ax5.scatter(xE4, valE4, alpha=0.5, color='#007FFF', s=10)
     
-for xF1, xF2, valF1, valF2, c in zip(xsF1, xsF2, valsF1, valsF2, palette):
-    ax6.scatter(xF1, valF1, alpha=0.7, color='#FFD700')
-    ax6.scatter(xF2, valF2, alpha=0.7, color='#7F00FF')     
+for xF1, xF2, xF3, xF4, valF1, valF2, valF3, valF4, c in zip(xsF1, xsF2, xsF3, xsF4, valsF1, valsF2, valsF3, valsF4, palette):
+    ax6.scatter(xF1, valF1, alpha=0.5, color='#FFD700', s=10)
+    ax6.scatter(xF2, valF2, alpha=0.5, color='#7F00FF', s=10)
+    ax6.scatter(xF3, valF3, alpha=0.5, color='#FF007F', s=10)
+    ax6.scatter(xF4, valF4, alpha=0.5, color='#007FFF', s=10)      
 
 # Use the pyplot interface to customize any subplot...
 # First subplot
 plt.sca(ax1)
-plt.xticks(range(0, len(ticks) * 3, 3), ticks)
+plt.rcParams['xtick.labelsize'] = 10  # Add this line to change xtick label size
+plt.rcParams['ytick.labelsize'] = 10
+plt.xticks(range(0, len(ticks) * 3, 3), ticks, fontsize=12)
 plt.xlim(-1.5, len(ticks)*3-1.5)
 plt.ylabel("Path Length", fontweight='normal', fontsize=14)
 #plt.xlabel("Test Sets", fontweight='normal', fontsize=16)
-plt.plot([], c='#FFD700', label='MSM-All', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
+plt.plot([], c='#FFD700', label='MSM', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
 plt.plot([], c='#7F00FF', label='CHA', marker='o', linestyle='None', markersize=8)
-# Statistical annotation
-xs1 = np.array([-0.5, 2.5, 5.5])
-xs2 = np.array([0.5, 3.5, 6.5])
-for x1, x2 in zip(xs1, xs2):  # e.g., column 25%
-    y, h, col = max(datasetA1[:,int((x1+x2)/6)].max(), datasetA2[:,int((x1+x2)/6)].max()) + 0.4, 0.12, 'k'
-    plt.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1.5, c=col)
-    plt.text((x1+x2)*.5, y+h, "*", ha='center', va='bottom', color=col, size=14)      
-# Create empty plot with blank marker containing the extra label
-#plt.text(20.81, 5.18, "*", ha='center', va='bottom', color=col, size=14, zorder=10) 
-#plt.plot([], [], " ", label='Significant Mean ($P\leq 0.05$)', color='black')    
-#plt.legend(prop={'size':16}, loc="lower left")
+plt.plot([], c='#FF007F', label='CHA-Q1', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#007FFF', label='CHA-Q4', marker='o', linestyle='None', markersize=8)
+# # Statistical annotation
+# xs1 = np.array([]) # [-0.5, 2.5, 5.5]
+# xs2 = np.array([]) # [0.5, 3.5, 6.5]
+# for x1, x2 in zip(xs1, xs2):  # e.g., column 25%
+#     y, h, col = max(datasetA1[:,int((x1+x2)/6)].max(), datasetA2[:,int((x1+x2)/6)].max()) + 0.08, 0.016, 'k'
+#     plt.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1.5, c=col)
+#     plt.text((x1+x2)*.5, y+h, "*", ha='center', va='bottom', color=col, size=14)         
+# #plt.legend(prop={'size':16}, loc="lower left")
   
 # Second subplot
 plt.sca(ax2)
-plt.xticks(range(0, len(ticks) * 3, 3), ticks)
+plt.xticks(range(0, len(ticks) * 3, 3), ticks, fontsize=12)
 plt.xlim(-1.5, len(ticks)*3-1.5)
-plt.ylabel("Global Efficieny", fontweight='normal', fontsize=14)
+plt.ylabel("Clustering Coefficient", fontweight='normal', fontsize=14)
 #plt.xlabel("Test Sets", fontweight='normal', fontsize=16)
-plt.plot([], c='#FFD700', label='MSM-All', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
+plt.plot([], c='#FFD700', label='MSM', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
 plt.plot([], c='#7F00FF', label='CHA', marker='o', linestyle='None', markersize=8)
-# Statistical annotation
-xs1 = np.array([-0.5, 2.5, 5.5])
-xs2 = np.array([0.5, 3.5, 6.5])
-for x1, x2 in zip(xs1, xs2):  # e.g., column 25%
-    y, h, col = max(datasetB1[:,int((x1+x2)/6)].max(), datasetB2[:,int((x1+x2)/6)].max()) + 0.025, 0.007, 'k'
-    plt.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1.5, c=col)
-    plt.text((x1+x2)*.5, y+h, "*", ha='center', va='bottom', color=col, size=14)
-#plt.legend(prop={'size':14}, loc="lower left")
+plt.plot([], c='#FF007F', label='CHA-Q1', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#007FFF', label='CHA-Q4', marker='o', linestyle='None', markersize=8)
+# # Statistical annotation
+# xs1 = np.array([-0.5, 2.5, 5.5])
+# xs2 = np.array([0.5, 3.5, 6.5])
+# for x1, x2 in zip(xs1, xs2):  # e.g., column 25%
+#     y, h, col = max(datasetB1[:,int((x1+x2)/6)].max(), datasetB2[:,int((x1+x2)/6)].max()) + 0.02, 0.005, 'k'
+#     plt.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1.5, c=col)
+#     plt.text((x1+x2)*.5, y+h, "*", ha='center', va='bottom', color=col, size=14)
+# #plt.legend(prop={'size':14}, loc="lower left")
 
 # Third subplot
 plt.sca(ax3)
-plt.xticks(range(0, len(ticks) * 3, 3), ticks)
+plt.xticks(range(0, len(ticks) * 3, 3), ticks, fontsize=12)
 plt.xlim(-1.5, len(ticks)*3-1.5)
-plt.ylabel("Clustering Coeeficient", fontweight='normal', fontsize=14)
+plt.ylabel("Global Efficiency", fontweight='normal', fontsize=14)
 #plt.xlabel("Test Sets", fontweight='normal', fontsize=16)
-plt.plot([], c='#FFD700', label='MSM-All', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
+plt.plot([], c='#FFD700', label='MSM', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
 plt.plot([], c='#7F00FF', label='CHA', marker='o', linestyle='None', markersize=8)
-# Statistical annotation
-xs1 = np.array([-0.5, 2.5, 5.5])
-xs2 = np.array([0.5, 3.5, 6.5])
-for x1, x2 in zip(xs1, xs2):  # e.g., column 25%
-    y, h, col = max(datasetC1[:,int((x1+x2)/6)].max(), datasetC2[:,int((x1+x2)/6)].max()) + 0.015, 0.005, 'k'
-    plt.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1.5, c=col)
-    plt.text((x1+x2)*.5, y+h, "*", ha='center', va='bottom', color=col, size=14)  
-#plt.legend(prop={'size':14})
+plt.plot([], c='#FF007F', label='CHA-Q1', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#007FFF', label='CHA-Q4', marker='o', linestyle='None', markersize=8)
+# # Statistical annotation
+# xs1 = np.array([-0.5, 2.5, 5.5])
+# xs2 = np.array([0.5, 3.5, 6.5])
+# for x1, x2 in zip(xs1, xs2):  # e.g., column 25%
+#     y, h, col = max(datasetC1[:,int((x1+x2)/6)].max(), datasetC2[:,int((x1+x2)/6)].max()) + 0.015, 0.005, 'k'
+#     plt.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1.5, c=col)
+#     plt.text((x1+x2)*.5, y+h, "*", ha='center', va='bottom', color=col, size=14)  
+# #plt.legend(prop={'size':14})
 
 # Forth subplot
 plt.sca(ax4)
-plt.xticks(range(0, len(ticks) * 3, 3), ticks)
-plt.xlim(-1.5, len(ticks)*3-1.5)
-plt.ylabel("Transitivity", fontweight='normal', fontsize=14)
-#plt.xlabel("Test Sets", fontweight='normal', fontsize=16)
-plt.plot([], c='#FFD700', label='MSM-All', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
-plt.plot([], c='#7F00FF', label='CHA', marker='o', linestyle='None', markersize=8)
-# Statistical annotation
-xs1 = np.array([-0.5, 2.5, 5.5])
-xs2 = np.array([0.5, 3.5, 6.5])
-for x1, x2 in zip(xs1, xs2):  # e.g., column 25%
-    y, h, col = max(datasetD1[:,int((x1+x2)/6)].max(), datasetD2[:,int((x1+x2)/6)].max()) + 0.022, 0.006, 'k'
-    plt.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1.5, c=col)
-    plt.text((x1+x2)*.5, y+h, "*", ha='center', va='bottom', color=col, size=14)  
-#plt.legend(prop={'size':14})
-
-# Fifth subplot
-plt.sca(ax5)
-plt.xticks(range(0, len(ticks) * 3, 3), ticks)
+plt.xticks(range(0, len(ticks) * 3, 3), ticks, fontsize=12)
 plt.xlim(-1.5, len(ticks)*3-1.5)
 plt.ylabel("Assortativity", fontweight='normal', fontsize=14)
 #plt.xlabel("Test Sets", fontweight='normal', fontsize=16)
-plt.plot([], c='#FFD700', label='MSM-All', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
+plt.plot([], c='#FFD700', label='MSM', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
 plt.plot([], c='#7F00FF', label='CHA', marker='o', linestyle='None', markersize=8)
-# Statistical annotation
-xs1 = np.array([-0.5, 2.5, 5.5])
-xs2 = np.array([0.5, 3.5, 6.5])
-for x1, x2 in zip(xs1, xs2):  # e.g., column 25%
-    y, h, col = max(datasetE1[:,int((x1+x2)/6)].max(), datasetE2[:,int((x1+x2)/6)].max()) + 0.05, 0.012, 'k'
-    plt.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1.5, c=col)
-    plt.text((x1+x2)*.5, y+h, "*", ha='center', va='bottom', color=col, size=14)  
-#plt.legend(prop={'size':14})
+plt.plot([], c='#FF007F', label='CHA-Q1', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#007FFF', label='CHA-Q4', marker='o', linestyle='None', markersize=8)
+# # Statistical annotation
+# xs1 = np.array([-0.5, 2.5, 5.5])
+# xs2 = np.array([0.5, 3.5, 6.5])
+# for x1, x2 in zip(xs1, xs2):  # e.g., column 25%
+#     y, h, col = max(datasetD1[:,int((x1+x2)/6)].max(), datasetD2[:,int((x1+x2)/6)].max()) + 0.05, 0.019, 'k'
+#     plt.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1.5, c=col)
+#     plt.text((x1+x2)*.5, y+h, "*", ha='center', va='bottom', color=col, size=14)  
+# #plt.legend(prop={'size':14})
 
-# Sixth subplot
-plt.sca(ax6)
-plt.xticks(range(0, len(ticks) * 3, 3), ticks)
+# Fifth subplot
+plt.sca(ax5)
+plt.xticks(range(0, len(ticks) * 3, 3), ticks, fontsize=12)
 plt.xlim(-1.5, len(ticks)*3-1.5)
 plt.ylabel("Modularity (single-layer)", fontweight='normal', fontsize=14)
 #plt.xlabel("Test Sets", fontweight='normal', fontsize=16)
-plt.plot([], c='#FFD700', label='MSM-All', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
+plt.plot([], c='#FFD700', label='MSM', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
 plt.plot([], c='#7F00FF', label='CHA', marker='o', linestyle='None', markersize=8)
-# Statistical annotation
-xs1 = np.array([-0.5, 2.5, 5.5])
-xs2 = np.array([0.5, 3.5, 6.5])
-for x1, x2 in zip(xs1, xs2):  # e.g., column 25%
-    y, h, col = max(datasetF1[:,int((x1+x2)/6)].max(), datasetF2[:,int((x1+x2)/6)].max()) + 0.014, 0.004, 'k'
-    plt.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1.5, c=col)
-    plt.text((x1+x2)*.5, y+h, "*", ha='center', va='bottom', color=col, size=14)  
-#plt.legend(prop={'size':14})
+plt.plot([], c='#FF007F', label='CHA-Q1', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#007FFF', label='CHA-Q4', marker='o', linestyle='None', markersize=8)
+# # Statistical annotation
+# xs1 = np.array([])
+# xs2 = np.array([])
+# for x1, x2 in zip(xs1, xs2):  # e.g., column 25%
+#     y, h, col = max(datasetE1[:,int((x1+x2)/6)].max(), datasetE2[:,int((x1+x2)/6)].max()) + 0.02, 0.006, 'k'
+#     plt.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1.5, c=col)
+#     plt.text((x1+x2)*.5, y+h, "*", ha='center', va='bottom', color=col, size=14)  
+# #plt.legend(prop={'size':14})
+
+# Sixth subplot
+plt.sca(ax6)
+plt.xticks(range(0, len(ticks) * 3, 3), ticks, fontsize=12)
+plt.xlim(-1.5, len(ticks)*3-1.5)
+plt.ylabel("Small-worldness", fontweight='normal', fontsize=14)
+#plt.xlabel("Test Sets", fontweight='normal', fontsize=16)
+plt.plot([], c='#FFD700', label='MSM', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
+plt.plot([], c='#7F00FF', label='CHA-All', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#FF007F', label='CHA-Q1', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#007FFF', label='CHA-Q4', marker='o', linestyle='None', markersize=8)
+# # Statistical annotation
+# xs1 = np.array([-0.5, 2.5, 5.5])
+# xs2 = np.array([0.5, 3.5, 6.5])
+# for x1, x2 in zip(xs1, xs2):  # e.g., column 25%
+#     y, h, col = max(datasetF1[:,int((x1+x2)/6)].max(), datasetF2[:,int((x1+x2)/6)].max()) + 0.14, 0.04, 'k'
+#     plt.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1.5, c=col)
+#     plt.text((x1+x2)*.5, y+h, "*", ha='center', va='bottom', color=col, size=14)  
+# #plt.legend(prop={'size':14})
 
 # Unified legend  
 handles, labels = ax1.get_legend_handles_labels()
@@ -2084,11 +1852,18 @@ sns.despine(right=True) # removes right and top axis lines (top, bottom, right, 
 
 # Adjust the layout of the plot
 plt.tight_layout()
-plt.savefig('/Users/Farzad/Desktop/Figures/Global_Boxplot.pdf',
-            bbox_inches='tight', pad_inches=0, format='pdf', dpi=300) 
+plt.savefig('/Users/Farzad/Desktop/Figures/Revision/Fig4_Global_Boxplot_test.pdf', bbox_inches='tight', pad_inches=0, format='pdf', dpi=300) 
 plt.show() 
 
-#%% shaded ERROR BAR (global measures, coarse scale)
+# =============================================================================
+# # Perform t-test
+# from scipy.stats import ttest_ind
+# 
+# t_statistic, p_value = ttest_ind(datasetF1[:,3], datasetF2[:,3])
+# print(p_value)
+# =============================================================================
+
+#%% shaded ERROR BAR (local measures, coarse scale)
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.ticker import FormatStrFormatter
@@ -2096,51 +1871,69 @@ import numpy as np
 import seaborn as sns
 import string
 
-mean_A1 = np.mean(stg_l[2,:,:], axis=0)
-std_A1 = np.std(stg_l[2,:,:], axis=0)
-mean_A2 = np.mean(stg_l[6,:,:], axis=0)
-std_A2 = np.std(stg_l[6,:,:], axis=0)
+# Find the indices of 180 (half) or 360 (whole brain) regions based on 12 networks of cole/anticevic
+import hcp_utils as hcp
+n_roi = 180 # 180 or 360
+index = np.zeros((n_roi,)) # whole brain: np.zeros((360,))
+for roi in range(1,n_roi+1): # whole brain: range(1,361)
+    r = roi-1
+    index_parcel = np.where(hcp.mmp.map_all==roi)[0][0] # mmp or ca_parcels
+    index[r] = hcp.ca_network.map_all[index_parcel] # ca_network
+# create sorted index    
+index_sorted = index.argsort(kind='stable')
 
-mean_B1 = np.mean(eig_l[2,:,:], axis=0)
-std_B1 = np.std(eig_l[2,:,:], axis=0)
-mean_B2 = np.mean(eig_l[6,:,:], axis=0)
-std_B2 = np.std(eig_l[6,:,:], axis=0)
+mean_A1 = np.mean(np.array(coarse_measures[sets[2]]['degree'])[:,index_sorted], axis=0)
+std_A1 = np.std(np.array(coarse_measures[sets[2]]['degree'])[:,index_sorted], axis=0)
+mean_A2 = np.mean(np.array(coarse_measures[sets[6]]['degree'])[:,index_sorted], axis=0)
+std_A2 = np.std(np.array(coarse_measures[sets[6]]['degree'])[:,index_sorted], axis=0)
 
-mean_C1 = np.mean(clc_l[2,:,:], axis=0)
-std_C1 = np.std(clc_l[2,:,:], axis=0)
-mean_C2 = np.mean(clc_l[6,:,:], axis=0)
-std_C2 = np.std(clc_l[6,:,:], axis=0)
+mean_B1 = np.mean(np.array(coarse_measures[sets[2]]['eigenvector_centrality'])[:,index_sorted], axis=0)
+std_B1 = np.std(np.array(coarse_measures[sets[2]]['eigenvector_centrality'])[:,index_sorted], axis=0)
+mean_B2 = np.mean(np.array(coarse_measures[sets[6]]['eigenvector_centrality'])[:,index_sorted], axis=0)
+std_B2 = np.std(np.array(coarse_measures[sets[6]]['eigenvector_centrality'])[:,index_sorted], axis=0)
 
-mean_D1 = np.mean(kco_l[2,:,:], axis=0)
-std_D1 = np.std(kco_l[2,:,:], axis=0)
-mean_D2 = np.mean(kco_l[6,:,:], axis=0)
-std_D2 = np.std(kco_l[6,:,:], axis=0)
+mean_C1 = np.mean(np.array(coarse_measures[sets[2]]['closeness_centrality'])[:,index_sorted], axis=0)
+std_C1 = np.std(np.array(coarse_measures[sets[2]]['closeness_centrality'])[:,index_sorted], axis=0)
+mean_C2 = np.mean(np.array(coarse_measures[sets[6]]['closeness_centrality'])[:,index_sorted], axis=0)
+std_C2 = np.std(np.array(coarse_measures[sets[6]]['closeness_centrality'])[:,index_sorted], axis=0)
+
+mean_D1 = np.mean(np.array(coarse_measures[sets[2]]['local_clustering'])[:,index_sorted], axis=0)
+std_D1 = np.std(np.array(coarse_measures[sets[2]]['local_clustering'])[:,index_sorted], axis=0)
+mean_D2 = np.mean(np.array(coarse_measures[sets[6]]['local_clustering'])[:,index_sorted], axis=0)
+std_D2 = np.std(np.array(coarse_measures[sets[6]]['local_clustering'])[:,index_sorted], axis=0)
+
+mean_E1 = np.mean(np.array(coarse_measures[sets[2]]['k_coreness'])[:,index_sorted], axis=0)
+std_E1 = np.std(np.array(coarse_measures[sets[2]]['k_coreness'])[:,index_sorted], axis=0)
+mean_E2 = np.mean(np.array(coarse_measures[sets[6]]['k_coreness'])[:,index_sorted], axis=0)
+std_E2 = np.std(np.array(coarse_measures[sets[6]]['k_coreness'])[:,index_sorted], axis=0)
 
 x = np.arange(len(mean_A1))
 
-fig, (ax1, ax2, ax3, ax4) = plt.subplots(nrows=4, ncols=1, sharex=True, sharey=False, figsize=(12, 10))
+fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(nrows=5, ncols=1, sharex=True, sharey=False, figsize=(12, 8))
 
-g1 = 'MSM-All'; g2 = 'CHA'; c1 = '#FFD700'; c2 = '#7F00FF'
-# general plot settings
-split = np.array([-0.5, 5.5, 59.5, 98.5, 154.5, 177.5, 200.5, 250.5, 265.5, 342.5, 349.5, 353.5, 359.5])
+g1 = 'MSM'; g2 = 'CHA'; c1 = '#FFD700'; c2 = '#7F00FF'
+# general plot settings (cole/anticevic)
+split = np.array([-0.5, 5.5, 59.5, 98.5, 154.5, 177.5, 200.5, 250.5, 265.5, 342.5, 349.5, 353.5, 359.5]) # whole brain
+split = np.array([-0.5, 2.5, 29.5, 48.5, 75.5, 87.5, 101.5, 123.5, 131.5, 171.5, 174.5, 176.5, 179.5]) # half brain
+
 color = ['#0020FF', '#7830F0', '#3EFCFD', '#B51DB4', '#00F300', '#009091', 
          '#FFFE16', '#FB64FE', '#FF2E00', '#C47A31', '#FFB300', '#5A9B00']
 labels = ['Primary Visual', 'Secondary Visual', 'Somatomotor', 'Cingulo-Opercular', 'Dorsal Attention', 'Language',
           'Frontoparietal', 'Auditory', 'Default Mode', 'Posterior Multimodal', 'Ventral Multimodal', 'Orbito-Affective']
 
 plt.sca(ax1)
-ebA1 = ax1.plot(x, mean_A1, '-ko', label=g1, markerfacecolor=c1, linewidth=0.8, markersize=3, markeredgewidth=0.5)
+ebA1 = ax1.plot(x, mean_A1, '-ko', label=g1, markerfacecolor=c1, linewidth=0.5, markersize=3.5, markeredgewidth=0.4)
 ax1.fill_between(x, mean_A1 - std_A1, mean_A1 + std_A1, color=c1, alpha=0.3)
-ebA2 = ax1.plot(x, mean_A2, '-ko', label=g2, markerfacecolor=c2, linewidth=0.8, markersize=3, markeredgewidth=0.5)
-ax1.fill_between(x, mean_A2 - std_A2, mean_A2 + std_A2, color=c2, alpha=0.3)
-plt.ylabel("Degree", fontweight='normal', fontsize=10)
+ebA2 = ax1.plot(x, mean_A2, '-ko', label=g2, markerfacecolor=c2, linewidth=0.5, markersize=3.5, markeredgewidth=0.4)
+ax1.fill_between(x, mean_A2 - std_A2, mean_A2 + std_A2, color=c2, alpha=0.2)
+plt.ylabel("Degree", fontweight='normal', fontsize=9)
 ax1.get_yaxis().set_label_coords(-0.04,0.5) # Aligning y-axis labels
 plt.axvline(x=999.5, color='k', linestyle='-', linewidth=1.5) # l/r separator -> "NECESSARY FOR rectangle patcehs -> clip_on=False"
 """# significance
 plt.axvline(x=15-1, color='r', linestyle='--', linewidth=1.5)
 """
 # Add rectangle objects as tick labels
-plt.xlim([-1, 360])
+plt.xlim([-1, n_roi])
 y_min, y_max = ax1.get_ylim()
 h = (y_max-y_min)/15; space = h/5; i = y_min - h # intercept
 xy = split[:-1] # anchor points
@@ -2152,11 +1945,11 @@ for j in range(len(xy)): # plot rectangles one-by-one
     ax1.add_patch(patches.Rectangle((xy[j], i), width=w[j], height=h, facecolor=color[j], clip_on=False, linewidth=0.4, edgecolor='k'))
 
 plt.sca(ax2)
-ebB1 = ax2.plot(x, mean_B1, '-ko', label=g1, markerfacecolor=c1, linewidth=0.8, markersize=3, markeredgewidth=0.5)
+ebB1 = ax2.plot(x, mean_B1, '-ko', label=g1, markerfacecolor=c1, linewidth=0.5, markersize=3.5, markeredgewidth=0.4)
 ax2.fill_between(x, mean_B1 - std_B1, mean_B1 + std_B1, color=c1, alpha=0.3)
-ebB2 = ax2.plot(x, mean_B2, '-ko', label=g2, markerfacecolor=c2, linewidth=0.8, markersize=3, markeredgewidth=0.5)
-ax2.fill_between(x, mean_B2 - std_B2, mean_B2 + std_B2, color=c2, alpha=0.3)
-plt.ylabel("Eigenector Centrality", fontweight='normal', fontsize=10)
+ebB2 = ax2.plot(x, mean_B2, '-ko', label=g2, markerfacecolor=c2, linewidth=0.5, markersize=3.5, markeredgewidth=0.4)
+ax2.fill_between(x, mean_B2 - std_B2, mean_B2 + std_B2, color=c2, alpha=0.2)
+plt.ylabel("Eigenvector Centrality", fontweight='normal', fontsize=9)
 ax2.get_yaxis().set_label_coords(-0.04,0.5)
 ax2.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 plt.axvline(x=999.5, color='k', linestyle='-', linewidth=1.5) # l/r separator
@@ -2164,7 +1957,7 @@ plt.axvline(x=999.5, color='k', linestyle='-', linewidth=1.5) # l/r separator
 plt.axvline(x=99-1, color='r', linestyle='--', linewidth=1.5)
 """
 # Add rectangle objects as tick labels
-plt.xlim([-1, 360])
+plt.xlim([-1, n_roi])
 y_min, y_max = ax2.get_ylim()
 h = (y_max-y_min)/15; space = h/5; i = y_min - h # intercept
 xy = split[:-1] # anchor points
@@ -2176,18 +1969,18 @@ for j in range(len(xy)): # plot rectangles one-by-one
     ax2.add_patch(patches.Rectangle((xy[j], i), width=w[j], height=h, facecolor=color[j], clip_on=False, linewidth=0.4, edgecolor='k'))
 
 plt.sca(ax3)
-ebC1 = ax3.plot(x, mean_C1, '-ko', label=g1, markerfacecolor=c1, linewidth=0.8, markersize=3, markeredgewidth=0.5)
+ebC1 = ax3.plot(x, mean_C1, '-ko', label=g1, markerfacecolor=c1, linewidth=0.5, markersize=3.5, markeredgewidth=0.4)
 ax3.fill_between(x, mean_C1 - std_C1, mean_C1 + std_C1, color=c1, alpha=0.3)
-ebC2 = ax3.plot(x, mean_C2, '-ko', label=g2, markerfacecolor=c2, linewidth=0.8, markersize=3, markeredgewidth=0.5)
-ax3.fill_between(x, mean_C2 - std_C2, mean_C2 + std_C2, color=c2, alpha=0.3)
-plt.ylabel("Clustering Coefficient", fontweight='normal', fontsize=10)
+ebC2 = ax3.plot(x, mean_C2, '-ko', label=g2, markerfacecolor=c2, linewidth=0.5, markersize=3.5, markeredgewidth=0.4)
+ax3.fill_between(x, mean_C2 - std_C2, mean_C2 + std_C2, color=c2, alpha=0.2)
+plt.ylabel("Closeness Centrality", fontweight='normal', fontsize=9)
 ax3.get_yaxis().set_label_coords(-0.04,0.5)
 plt.axvline(x=999.5, color='k', linestyle='-', linewidth=1.5) # l/r separator
 """# significance
 plt.axvline(x=94-1, color='r', linestyle='--', linewidth=1.5)
 """
 # Add rectangle objects as tick labels
-plt.xlim([-1, 360])
+plt.xlim([-1, n_roi])
 y_min, y_max = ax3.get_ylim()
 h = (y_max-y_min)/15; space = h/5; i = y_min - h # intercept
 xy = split[:-1] # anchor points
@@ -2199,18 +1992,18 @@ for j in range(len(xy)): # plot rectangles one-by-one
     ax3.add_patch(patches.Rectangle((xy[j], i), width=w[j], height=h, facecolor=color[j], clip_on=False, linewidth=0.4, edgecolor='k'))
 
 plt.sca(ax4)
-ebD1 = ax4.plot(x, mean_D1, '-ko', label=g1, markerfacecolor=c1, linewidth=0.8, markersize=3, markeredgewidth=0.5)
+ebD1 = ax4.plot(x, mean_D1, '-ko', label=g1, markerfacecolor=c1, linewidth=0.5, markersize=3.5, markeredgewidth=0.4)
 ax4.fill_between(x, mean_D1 - std_D1, mean_D1 + std_D1, color=c1, alpha=0.3)
-ebD2 = ax4.plot(x, mean_D2, '-ko', label=g2, markerfacecolor=c2, linewidth=0.8, markersize=3, markeredgewidth=0.5)
-ax4.fill_between(x, mean_D2 - std_D2, mean_D2 + std_D2, color=c2, alpha=0.3)
-plt.ylabel("Local Efficiency", fontweight='normal', fontsize=10)
+ebD2 = ax4.plot(x, mean_D2, '-ko', label=g2, markerfacecolor=c2, linewidth=0.5, markersize=3.5, markeredgewidth=0.4)
+ax4.fill_between(x, mean_D2 - std_D2, mean_D2 + std_D2, color=c2, alpha=0.2)
+plt.ylabel("Clustering Coefficient", fontweight='normal', fontsize=9)
 ax4.get_yaxis().set_label_coords(-0.04,0.5)
 plt.axvline(x=999.5, color='k', linestyle='-', linewidth=1.5) # l/r separator
 """# significance
 plt.axvline(x=15-1, color='r', linestyle='--', linewidth=1.5, label='Significant Variation')
 """
 # Add rectangle objects as tick labels
-plt.xlim([-1, 360])
+plt.xlim([-1, n_roi])
 y_min, y_max = ax4.get_ylim()
 h = (y_max-y_min)/15; space = h/5; i = y_min - h # intercept
 xy = split[:-1] # anchor points
@@ -2221,12 +2014,36 @@ plt.tick_params(axis='y', labelsize=8)
 for j in range(len(xy)): # plot rectangles one-by-one
     ax4.add_patch(patches.Rectangle((xy[j], i), width=w[j], height=h, facecolor=color[j], clip_on=False, linewidth=0.4, edgecolor='k', label=labels[j]))
 
-plt.legend(prop={'size':9}, ncol=7, frameon=False, bbox_to_anchor=(.48, -.06), loc='upper center')
+plt.sca(ax5)
+ebE1 = ax5.plot(x, mean_E1, '-ko', label=g1, markerfacecolor=c1, linewidth=0.5, markersize=3.5, markeredgewidth=0.4)
+ax5.fill_between(x, mean_E1 - std_E1, mean_E1 + std_E1, color=c1, alpha=0.3)
+ebE2 = ax5.plot(x, mean_E2, '-ko', label=g2, markerfacecolor=c2, linewidth=0.5, markersize=3.5, markeredgewidth=0.4)
+ax5.fill_between(x, mean_E2 - std_E2, mean_E2 + std_E2, color=c2, alpha=0.2)
+plt.ylabel("K-coreness", fontweight='normal', fontsize=9)
+ax5.get_yaxis().set_label_coords(-0.04,0.5)
+plt.axvline(x=999.5, color='k', linestyle='-', linewidth=1.5) # l/r separator
+"""# significance
+plt.axvline(x=15-1, color='r', linestyle='--', linewidth=1.5, label='Significant Variation')
+"""
+# Add rectangle objects as tick labels
+plt.xlim([-1, n_roi])
+y_min, y_max = ax5.get_ylim()
+h = (y_max-y_min)/15; space = h/5; i = y_min - h # intercept
+xy = split[:-1] # anchor points
+w = split[1:] - xy # rectangle width(s)
+# ticks and labels along the bottom edge are off
+plt.tick_params(axis='x', which='both', bottom=False, labelbottom=False)
+plt.tick_params(axis='y', labelsize=8)
+for j in range(len(xy)): # plot rectangles one-by-one
+    ax5.add_patch(patches.Rectangle((xy[j], i), width=w[j], height=h, facecolor=color[j], clip_on=False, linewidth=0.4, edgecolor='k', label=labels[j]))
+
+
+plt.legend(prop={'size':9.5}, ncol=7, frameon=False, bbox_to_anchor=(.48, -.06), loc='upper center')
 
 # Annotate Subplots in a Figure with A, B, C, D (as well as L & R)
-for n, ax in enumerate((ax1, ax2, ax3, ax4)):
+for n, ax in enumerate((ax1, ax2, ax3, ax4, ax5)):
     ax.text(-0.07, 1.05, string.ascii_uppercase[n], transform=ax.transAxes, 
-            size=14, weight='bold')
+            size=12, weight='bold')
     #ax.text(0.258, 1.015, 'L', transform=ax.transAxes, 
             #size=14, weight='regular')
     #ax.text(0.731, 1.015, 'R', transform=ax.transAxes, 
@@ -2236,11 +2053,714 @@ sns.despine(right=True) # removes right and top axis lines (top, bottom, right, 
 
 # Adjust the layout of the plot
 plt.tight_layout()
-
 plt.savefig('/Users/Farzad/Desktop/Figures/ShadedErrorbar.pdf',
             bbox_inches='tight', pad_inches=0, format='pdf', dpi=300) 
-
 plt.show()
+
+#%% Regression (coarse scale) + catplot
+
+import numpy as np
+import pandas as pd
+import pickle
+from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.svm import SVR
+from sklearn.metrics import mean_squared_error, r2_score
+from scipy.stats import spearmanr
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
+
+def load_graph_measures(filepath, measure, subjects):
+    with open(filepath, 'rb') as f:
+        graph_measures = pickle.load(f) 
+    data = pd.DataFrame(graph_measures[measure]).head(len(subjects))
+    data.index = subjects
+    return data
+
+def train_and_evaluate_model(X_train, y_train, X_test, y_test):
+    reg = Ridge(alpha=1.0).fit(X_train, y_train) # Linear least squares with l2 regularization 
+    #reg = LinearRegression().fit(X_train, y_train) 
+    y_pred = reg.predict(X_test)    
+    mse = mean_squared_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
+    return mse, r2
+
+subjects = ['100206', '100307', '100408', '100610', '101006', '101107', '101309', '101915', '102008', '102311', '102513', '102816', '103111', '103414', '103515', '103818', '104012', '104416', '105014', '105115', '105216', '105620', '105923', '106016', '106319', '106521', '107018', '107321', '107422', '107725', '108121', '108222', '108323', '108525', '108828', '109123', '109325', '109830', '110007', '110411', '110613', '111009', '111312', '111413', '111716', '112112', '112314', '112516', '112920', '113215', '113619', '113922', '114217', '114318', '114419', '114621', '114823', '114924', '115017', '115219', '115320', '115825', '116524', '116726', '117122', '117324', '117930', '118124', '118528', '118730', '118932', '119126', '120212', '120515', '120717', '121416', '121618', '121921', '122317', '122620', '122822', '123117', '123420', '123521', '123824', '123925', '124220', '124422', '124624', '124826', '125525', '126325', '126628', '127327', '127630', '127933', '128026', '128127', '128632', '128935', '129028', '129129', '129331', '129634', '130013', '130316', '130417', '130619', '130821', '130922', '131217', '131419', '131722', '131823', '131924', '132017', '132118', '133019', '133827', '133928', '134021', '134223', '134324', '134425', '134728', '134829', '135225', '135528', '135730', '135932', '136227', '136732', '136833', '137027', '137128', '137229', '137633', '137936', '138231', '138534', '138837', '139233', '139637', '139839', '140319', '140824', '140925', '141119', '141826', '142828', '143426', '144125', '144428', '144832', '145127', '146129', '146331', '146432', '146533', '146937', '147030', '147737', '148032', '148133', '148335', '148840', '148941', '149236', '149337', '149539', '149741', '149842', '150625', '150726', '150928', '151223', '151425', '151526', '151627', '151728', '151829', '152831', '153025', '153227', '153429', '153631', '153833', '154229', '179245', '179346', '180129', '180432', '180735', '180836', '180937', '181131', '181232', '181636', '182032', '182436', '182739', '182840', '183034', '185139', '185341', '185442', '185846', '185947', '186141', '186444', '187143', '187547', '187850', '188347', '188448', '188751', '189349', '189450', '190031', '191033', '191336', '191437', '191942', '192035', '192136', '192540', '192641', '192843', '193239', '194140', '194645', '194746', '194847', '195041', '195647', '195849', '195950', '196144', '196346', '196750', '197348', '197550', '198249', '198350', '198451', '198653', '198855', '199150', '199251', '199453', '199655', '199958', '200008', '200614', '200917', '201111', '201414', '201818', '202113', '202719', '203418', '204016', '204319', '204420', '204622', '205725', '206222', '207123', '208024', '208125', '208226', '208327', '209127', '209228', '209329']
+n_subjects = 200
+
+behav = 'Fluid_intelligence' # Age_in_Yrs, BMI, Gender, DepressionScore, Fluid_intelligence
+demo = pd.read_excel('/Volumes/Elements/HCP_Motion/DemoData.xlsx', index_col='Subject')
+demo.index = demo.index.astype(str)
+behav_data = demo.loc[subjects[:n_subjects]]
+behav_data.fillna(behav_data.mean(), inplace=True)
+
+sets = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
+        'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
+pred_set = np.array([[0, 1, 'MSM: REST1_RL'], [0, 2, 'MSM: REST2_LR'], [0, 3, 'MSM: REST2_RL'], [4, 5, 'CHA: REST1_RL'], [4, 6, 'CHA: REST2_LR'], [4, 7, 'CHA: REST2_RL']])
+
+measures = ['degree', 'eigenvector_centrality', 'closeness_centrality', 'local_clustering', 'k_coreness'] # 'pagerank_centrality',
+
+# Regression analysis
+results_mse = pd.DataFrame(index=measures, columns=[pred_set[i][2] for i in range(len(pred_set))])
+results_r2 = pd.DataFrame(index=measures, columns=[pred_set[i][2] for i in range(len(pred_set))])
+for measure in measures:
+    for s in range(len(pred_set)):
+        # Training/testing sets and target variable
+        X_train, y_train = load_graph_measures('/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/coarse/graph_measures_' + sets[int(pred_set[s][0])] + '.pickle', measure, subjects[:n_subjects]), behav_data[behav]
+        X_test, y_test = load_graph_measures('/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/coarse/graph_measures_' + sets[int(pred_set[s][1])] + '.pickle', measure, subjects[:n_subjects]), behav_data[behav]
+        # Train and evaluate model
+        mse, r2 = train_and_evaluate_model(X_train, y_train, X_test, y_test)
+        results_mse.at[measure, pred_set[s][2]] = mse
+        results_r2.at[measure, pred_set[s][2]] = r2
+
+#%% Catplot
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Set style and color palette
+sns.set(style="whitegrid")
+palette = ['#FFD700', '#7F00FF']
+
+# Create a new DataFrame with four columns
+data = []
+
+# Populate the list with the data
+for measure in measures:
+    for s in range(len(pred_set)):
+        mse_value = results_mse.at[measure, pred_set[s][2]]
+        test_value = pred_set[s][2].split(': ')[1]
+        alignment_value = pred_set[s][2].split(': ')[0]
+        data.append({'MSE': mse_value, 'Measure': measure, 'Test': test_value, 'Alignment': alignment_value})
+
+# Create the DataFrame
+df = pd.DataFrame(data)
+
+# Set plot style and dimensions
+sns.set(style="whitegrid")
+plt.figure(figsize=(10, 4))
+
+# Create the catplot
+ax = sns.catplot(x="Test", y="MSE", hue="Alignment", col="Measure",
+                 data=df, kind="bar", legend=False, legend_out=False,
+                 height=4, aspect=.8, sharey=False, palette=palette)
+
+# Set custom column names
+col_names = ['Degree', 'Eigenvector Centrality', 'Closeness Centrality', 'Clustering Coefficient', 'K-coreness'] # 'Pagerank Centrality', 
+for i, col_name in enumerate(col_names):
+    ax.axes[0][i].set_title(col_name, fontsize=14)
+
+# Set axis labels and ticks
+ax.set_axis_labels("", "MSE")
+ax.set_xticklabels(["T1: R2RL", "T2: R2LR", "T3: R2RL"])
+
+# Set plot limits and remove spines
+#ax.set(ylim=(0, 1))
+sns.despine(left=True)
+
+# Adjust layout and legend
+plt.tight_layout()
+plt.legend(loc='upper left')
+plt.subplots_adjust(wspace=0.15)
+
+# Save and show the plot
+plt.savefig('/Users/Farzad/Desktop/Figures/catplot_local_coarse.pdf')
+plt.show()
+
+#%% #######################################################################
+# *****             Graph-based Predictive Modeling (fine)            *****
+# #########################################################################
+
+import os
+import numpy as np
+import pandas as pd
+import pickle
+from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.svm import SVR
+from sklearn.metrics import mean_squared_error, r2_score
+from scipy.stats import spearmanr
+
+def load_graph_measures(filepath, measure, subjects):
+    with open(filepath, 'rb') as f:
+        graph_measures = pickle.load(f) 
+    data = pd.DataFrame(graph_measures[measure]).head(len(subjects))
+    data.index = subjects
+    return data
+
+def train_and_evaluate_model(X_train, y_train, X_test, y_test):
+    reg = Ridge(alpha=1.0).fit(X_train, y_train) # Linear least squares with l2 regularization 
+    #reg = LinearRegression().fit(X_train, y_train) 
+    #reg = SVR(kernel='rbf', C=100, gamma=0.1, epsilon=.1).fit(X_train, y_train)
+    y_pred = reg.predict(X_test)    
+    mse = mean_squared_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
+    return mse, r2
+
+subjects = ['100206', '100307', '100408', '100610', '101006', '101107', '101309', '101915', '102008', '102311', '102513', '102816', '103111', '103414', '103515', '103818', '104012', '104416', '105014', '105115', '105216', '105620', '105923', '106016', '106319', '106521', '107018', '107321', '107422', '107725', '108121', '108222', '108323', '108525', '108828', '109123', '109325', '109830', '110007', '110411', '110613', '111009', '111312', '111413', '111716', '112112', '112314', '112516', '112920', '113215', '113619', '113922', '114217', '114318', '114419', '114621', '114823', '114924', '115017', '115219', '115320', '115825', '116524', '116726', '117122', '117324', '117930', '118124', '118528', '118730', '118932', '119126', '120212', '120515', '120717', '121416', '121618', '121921', '122317', '122620', '122822', '123117', '123420', '123521', '123824', '123925', '124220', '124422', '124624', '124826', '125525', '126325', '126628', '127327', '127630', '127933', '128026', '128127', '128632', '128935', '129028', '129129', '129331', '129634', '130013', '130316', '130417', '130619', '130821', '130922', '131217', '131419', '131722', '131823', '131924', '132017', '132118', '133019', '133827', '133928', '134021', '134223', '134324', '134425', '134728', '134829', '135225', '135528', '135730', '135932', '136227', '136732', '136833', '137027', '137128', '137229', '137633', '137936', '138231', '138534', '138837', '139233', '139637', '139839', '140319', '140824', '140925', '141119', '141826', '142828', '143426', '144125', '144428', '144832', '145127', '146129', '146331', '146432', '146533', '146937', '147030', '147737', '148032', '148133', '148335', '148840', '148941', '149236', '149337', '149539', '149741', '149842', '150625', '150726', '150928', '151223', '151425', '151526', '151627', '151728', '151829', '152831', '153025', '153227', '153429', '153631', '153833', '154229', '179245', '179346', '180129', '180432', '180735', '180836', '180937', '181131', '181232', '181636', '182032', '182436', '182739', '182840', '183034', '185139', '185341', '185442', '185846', '185947', '186141', '186444', '187143', '187547', '187850', '188347', '188448', '188751', '189349', '189450', '190031', '191033', '191336', '191437', '191942', '192035', '192136', '192540', '192641', '192843', '193239', '194140', '194645', '194746', '194847', '195041', '195647', '195849', '195950', '196144', '196346', '196750', '197348', '197550', '198249', '198350', '198451', '198653', '198855', '199150', '199251', '199453', '199655', '199958', '200008', '200614', '200917', '201111', '201414', '201818', '202113', '202719', '203418', '204016', '204319', '204420', '204622', '205725', '206222', '207123', '208024', '208125', '208226', '208327', '209127', '209228', '209329']
+n_subjects = 200
+n_rois = 360 # 360
+group_labels = ['Q1', 'Q3', 'Q2', 'Q4', 'Q3', 'Q1', 'Q2', 'Q4', 'Q2', 'Q1', 'Q2', 'Q2', 'Q4', 'Q2', 'Q2', 'Q2', 'Q4', 'Q3', 'Q2', 'Q2', 'Q2', 'Q4', 'Q1', 'Q4', 'Q1', 'Q4', 'Q1', 'Q3', 'Q2', 'Q2', 'Q2', 'Q4', 'Q2', 'Q1', 'Q1', 'Q1', 'Q4', 'Q2', 'Q3', 'Q1', 'Q1', 'Q3', 'Q3', 'Q3', 'Q3', 'Q2', 'Q4', 'Q3', 'Q1', 'Q1', 'Q4', 'Q1', 'Q2', 'Q2', 'Q3', 'Q2', 'Q4', 'Q1', 'Q3', 'Q3', 'Q4', 'Q1', 'Q1', 'Q4', 'Q1', 'Q2', 'Q4', 'Q4', 'Q3', 'Q4', 'Q3', 'Q2', 'Q1', 'Q1', 'Q2', 'Q1', 'Q4', 'Q1', 'Q4', 'Q3', 'Q4', 'Q3', 'Q2', 'Q3', 'Q2', 'Q1', 'Q4', 'Q2', 'Q1', 'Q3', 'Q3', 'Q1', 'Q1', 'Q2', 'Q2', 'Q3', 'Q2', 'Q1', 'Q1', 'Q4', 'Q3', 'Q4', 'Q1', 'Q1', 'Q4', 'Q2', 'Q2', 'Q2', 'Q1', 'Q4', 'Q3', 'Q3', 'Q4', 'Q2', 'Q3', 'Q2', 'Q3', 'Q1', 'Q1', 'Q2', 'Q2', 'Q2', 'Q3', 'Q3', 'Q2', 'Q1', 'Q2', 'Q3', 'Q3', 'Q1', 'Q4', 'Q3', 'Q3', 'Q2', 'Q2', 'Q4', 'Q4', 'Q1', 'Q4', 'Q1', 'Q1', 'Q3', 'Q1', 'Q4', 'Q4', 'Q3', 'Q1', 'Q2', 'Q1', 'Q1', 'Q4', 'Q1', 'Q1', 'Q4', 'Q3', 'Q2', 'Q1', 'Q2', 'Q4', 'Q4', 'Q3', 'Q3', 'Q2', 'Q4', 'Q4', 'Q3', 'Q4', 'Q4', 'Q3', 'Q4', 'Q3', 'Q4', 'Q3', 'Q3', 'Q2', 'Q2', 'Q4', 'Q1', 'Q3', 'Q4', 'Q3', 'Q1', 'Q2', 'Q4', 'Q4', 'Q3', 'Q3', 'Q3', 'Q1', 'Q3', 'Q3', 'Q3', 'Q2', 'Q2', 'Q4', 'Q4', 'Q4', 'Q1', 'Q1', 'Q4']
+#indices = [i for i in range(len(group_labels)) if group_labels[i] == 'Q3']
+indices = [i for i in range(len(group_labels)) if group_labels[i] == 'Q3' or group_labels[i] == 'Q4']
+
+
+behav = 'Fluid_intelligence' # Age_in_Yrs, BMI, Gender, DepressionScore, Fluid_intelligence
+demo = pd.read_excel('/Volumes/Elements/HCP_Motion/DemoData.xlsx', index_col='Subject')
+demo.index = demo.index.astype(str)
+behav_data = demo.loc[subjects[:n_subjects]]
+behav_data.fillna(behav_data.mean(), inplace=True)
+
+sets = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
+        'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
+pred_set = np.array([[0, 1, 'MSM: REST1_RL'], [0, 2, 'MSM: REST2_LR'], [0, 3, 'MSM: REST2_RL'], [4, 5, 'CHA: REST1_RL'], [4, 6, 'CHA: REST2_LR'], [4, 7, 'CHA: REST2_RL']])
+
+measures = ['degree', 'eigenvector_centrality', 'closeness_centrality', 'pagerank_centrality', 'local_clustering', 'k_coreness']
+
+results_mse = {}
+results_r2 = {}
+
+for measure in measures:
+    mse_df = pd.DataFrame(index=range(1, n_rois+1), columns=[pred_set[i][2] for i in range(len(pred_set))])
+    r2_df = pd.DataFrame(index=range(1, n_rois+1), columns=[pred_set[i][2] for i in range(len(pred_set))])
+    for roi in range(1, n_rois+1):
+        mse_values = [None] * len(pred_set)
+        r2_values = [None] * len(pred_set)
+        for s in range(len(pred_set)):
+            # Training/testing sets and target variable
+            X_train, y_train = load_graph_measures('/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/fine/graph_measures_roi' + str(roi) + '_' + sets[int(pred_set[s][0])] + '.pickle', measure, subjects[:n_subjects]), behav_data[behav]
+            X_train, y_train = X_train.iloc[indices], y_train.iloc[indices]
+            X_test, y_test = load_graph_measures('/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/fine/graph_measures_roi' + str(roi) + '_' + sets[int(pred_set[s][1])] + '.pickle', measure, subjects[:n_subjects]), behav_data[behav]
+            X_test, y_test = X_test.iloc[indices], y_test.iloc[indices]
+            # Train and evaluate model
+            mse, r2 = train_and_evaluate_model(X_train, y_train, X_test, y_test)
+            mse_values[s] = mse
+            r2_values[s] = r2
+        mse_df.loc[roi] = mse_values
+        r2_df.loc[roi] = r2_values
+        #print(roi)
+    print(measure)
+    results_mse[measure] = mse_df
+    results_r2[measure] = r2_df
+
+# Save and Load Results
+# =============================================================================
+# output_dir = '/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/'
+# filepath_mse = os.path.join(output_dir, 'results_mse.pickle')
+# filepath_r2 = os.path.join(output_dir, 'results_r2.pickle')
+# 
+# # Save results to a file
+# with open(filepath_mse, 'wb') as f:
+#     pickle.dump(results_mse, f)
+# with open(filepath_r2, 'wb') as f:
+#     pickle.dump(results_r2, f)  
+# =============================================================================
+
+#%% Raincloud plots
+import os
+import pickle
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import ptitprince as pt # pip install ptitprince
+# https://d212y8ha88k086.cloudfront.net/manuscripts/16574/2509d3d1-e074-4b6a-86d4-497f4cb0895c_15191_-_rogier_kievit.pdf?doi=10.12688/wellcomeopenres.15191.1&numberOfBrowsableCollections=8&numberOfBrowsableInstitutionalCollections=0&numberOfBrowsableGateways=14
+
+# Load results from the saved file
+output_dir = '/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/'
+filepath_mse = os.path.join(output_dir, 'results_mse_h2.pickle')
+filepath_r2 = os.path.join(output_dir, 'results_r2_h2.pickle')
+with open(filepath_mse, 'rb') as f:
+    results_mse = pickle.load(f)
+with open(filepath_r2, 'rb') as f:
+    results_r2 = pickle.load(f) 
+
+measures = ['Degree', 'Eigenvector Centrality', 'Closeness Centrality', 'Pagerank Centrality', 'Clustering Coefficient', 'K-coreness']
+
+sns.set_style("white")
+f, axes = plt.subplots(nrows=2, ncols=3, sharex=False, sharey=True, figsize=(12, 7)) # dpi=300
+for i, ax in enumerate(axes.flatten()):
+    key = list(results_mse.keys())[i]
+    df = results_mse[key]
+    # Create a new DataFrame with the desired columns
+    new_df = pd.DataFrame(columns=['MSE', 'Test', 'Alignment'])
+    # Iterate over the columns of the original DataFrame
+    for column in df.columns:
+        # Extract the Test# and Condition from the column name
+        test = column.split(': ')[1]
+        condition = column.split(': ')[0]
+        # Get the MSE values for the corresponding column
+        mse_values = df[column].astype(float)
+        # Replace outliers with the median value
+        median = mse_values.median()
+        # Set a threshold as a multiple of the interquartile range (IQR)
+        if i == 0 or i == len(df.columns) - 1:
+            threshold = 250  # Specific threshold for the first and last subplots
+            mse_values = np.where(np.abs(mse_values - median) > threshold, threshold, mse_values)
+        else:
+            mse_values = np.where(np.abs(mse_values - median) > 2 * mse_values.std(), median, mse_values)
+        # Create a temporary DataFrame with the MSE values, Test#, and Condition
+        temp_df = pd.DataFrame({'MSE': mse_values, 'Test': test, 'Alignment': condition})
+        # Append the temporary DataFrame to the new DataFrame
+        new_df = pd.concat([new_df, temp_df], ignore_index=True)
+    
+    pt.RainCloud(x='Test', y='MSE', hue='Alignment', data=new_df, 
+          palette=['#FFD700','#7F00FF'], width_viol=.7, width_box=.25,
+          jitter=1, move=0, orient='h', alpha=.75, dodge=True,
+          scale='area', cut=2, bw=.2, offset=None, ax=ax,
+          point_size=2, edgecolor='black', linewidth=1, pointplot=False) 
+    
+    sns.despine(right=True) # removes right and top axis lines (top, bottom, right, left)
+    ax.set_title(measures[i], fontsize=12) # title of plot
+    ax.set_xlabel('MSE', fontsize = 10) # xlabel
+    ax.set_ylabel('Test Set', fontsize = 10) # ylabel
+    ax.tick_params(axis='x', labelsize=8)
+    ax.tick_params(axis='y', labelsize=8)
+    ax.get_legend().remove() 
+
+# Add legend
+# plt.legend(prop={'size': 12}, frameon=False, bbox_to_anchor=(0.5, -0.2), loc='upper center')
+
+plt.tight_layout()
+#plt.savefig('/Users/Farzad/Desktop/Figures/Raincloud_plot.pdf') 
+plt.show()
+
+#%% Radar chart for MSEs across networks --> env pytorch
+import numpy as np
+import pandas as pd
+import hcp_utils as hcp
+import matplotlib.pyplot as plt
+from math import pi
+
+measure = 'eigenvector_centrality'
+# measures = ['degree', 'eigenvector_centrality', 'closeness_centrality', 'pagerank_centrality', 'local_clustering', 'k_coreness']
+
+# find the indices of 360 regions based on 12 networks of cole/anticevic
+index = np.zeros((360,))
+for roi in range(1,361):
+    r = roi-1
+    index_parcel = np.where(hcp.ca_parcels.map_all==roi)[0][0] # first one is enough
+    index[r] = hcp.yeo17.map_all[index_parcel]
+
+# =============================================================================
+# nets = ['Visual A', 'Visual B', 'Somatomotor A', 'Somatomotor B', 'Temporal Parietal', 'Dorsal Attention A',
+#         'Dorsal Attention B', 'Salience/VenAttn A', 'Salience/VenAttn B', 'Control A', 'Control B', 'Control C',
+#         'Default A', 'Default B', 'Default C', 'Limbic A', 'Limbic B']
+# =============================================================================
+
+# Create an empty dictionary to store the mean values for each group
+data = {'MSM': [], 'CHA': []}
+
+# Iterate over the file indices from 1 to 17
+for net in range(1, 18):
+
+    mean_msm = results_mse[measure].loc[index==net, ['MSM: REST1_RL', 'MSM: REST2_LR', 'MSM: REST2_RL']].mean()
+    mean_cha = results_mse[measure].loc[index==net, ['CHA: REST1_RL', 'CHA: REST2_LR', 'CHA: REST2_RL']].mean()
+    
+    # Calculate the mean for each group and append to the corresponding list
+    data['MSM'].append(mean_msm.mean())
+    data['CHA'].append(mean_cha.mean())
+
+# Create the DataFrame from the dictionary
+df = pd.DataFrame(data).transpose()
+df.columns = range(1, 18)
+
+# number of variable
+networks = list(df)
+N = len(networks)
+
+# What will be the angle of each axis in the plot? (we divide the plot / number of variable)
+angles = [n / float(N) * 2 * pi for n in range(N)]
+angles += angles[:1]
+
+# Initialise the spider plot
+ax = plt.subplot(111, polar=True)
+ 
+# If you want the first axis to be on top:
+ax.set_theta_offset(pi / 2)
+ax.set_theta_direction(-1)
+ 
+# Draw one axe per variable + add labels
+plt.xticks(angles[:-1], networks)
+
+# Draw ylabels
+if measure == 'degree':
+    label = 'Degree'
+    ax.set_rlabel_position(0)
+    yticks = [50,100,150,200,250]
+    yticks_string = [str(ytick) for ytick in yticks]
+    plt.yticks(yticks, yticks_string, color="grey", size=7)
+    plt.ylim(0,300)
+elif measure == 'eigenvector_centrality':
+    label = 'Eigenvector Centrality'
+    ax.set_rlabel_position(0)
+    yticks = [23,23.3,23.6,23.9,24.2]
+    yticks_string = [str(ytick) for ytick in yticks]
+    plt.yticks(yticks, yticks_string, color="grey", size=7)
+    plt.ylim(22.8,24.5)  
+elif measure == 'closeness_centrality':
+    label = 'Closeness Centrality'
+    ax.set_rlabel_position(0)
+    yticks = [20,21.5,23,24.5,26]
+    yticks_string = [str(ytick) for ytick in yticks]
+    plt.yticks(yticks, yticks_string, color="grey", size=7)
+    plt.ylim(20,25.5)  
+elif measure == 'local_clustering':
+    label = 'Clustering Coefficient'
+    ax.set_rlabel_position(0)
+    yticks = [21,23,26,29,31]
+    yticks_string = [str(ytick) for ytick in yticks]
+    plt.yticks(yticks, yticks_string, color="grey", size=7)
+    plt.ylim(20,30) 
+
+# Add plots
+# Group 1: MSM
+values = df.loc['MSM'].values.flatten().tolist()
+values += values[:1]
+color_msm = '#FFD700'  # Existing color for MSM
+dark_color_msm = '#B8860B'  # Darker shade for MSM
+ax.plot(angles, values, linewidth=1, linestyle='solid', label="MSM", color=dark_color_msm)
+ax.fill(angles, values, color_msm, alpha=0.15)
+# =============================================================================
+# # Set the color for the outer circle
+# ax.spines['polar'].set_color('red')  # Change 'red' to the desired color
+# # Set the linewidth for the outer circle
+# ax.spines['polar'].set_linewidth(3)  # Adjust the linewidth as needed
+# =============================================================================
+
+# Group 2: CHA
+values = df.loc['CHA'].values.flatten().tolist()
+values += values[:1]
+color_cha = '#7F00FF'  # Existing color for CHA
+dark_color_cha = '#4B0082'  # Darker shade for CHA
+ax.plot(angles, values, linewidth=1, linestyle='solid', label="CHA", color=dark_color_cha)
+ax.fill(angles, values, color_cha, alpha=0.15)
+
+# Add title
+plt.title(label) # plt.title(label.capitalize())
+ 
+# Add legend
+plt.legend(loc='lower center', bbox_to_anchor=(1, 1)) # outside --> (0.5, -0.26)
+
+# Show the graph
+plt.savefig(f'/Users/Farzad/Desktop/Figures/radar_{measure}.pdf',
+            bbox_inches='tight', pad_inches=0, format='pdf', dpi=600)
+plt.show()
+
+#%% Brain maps based on integration/recruitment
+import numpy as np
+import hcp_utils as hcp
+import matplotlib.pyplot as plt
+import nilearn.plotting as plotting
+
+n_roi = 360
+
+# eigenvector_centrality, closeness_centrality, local_clustering
+# REST1_RL, REST2_LR, REST2_RL
+data_msm = results_mse['local_clustering']['MSM: REST2_RL'].values # MSM
+data_cha = results_mse['local_clustering']['CHA: REST2_RL'].values # CHA
+
+x = np.zeros((59412,)) # MSM
+y = np.zeros((59412,)) # CHA
+for roi in range(1,n_roi+1):
+    roi_idx = np.where(hcp.mmp.map_all[:59412] == roi)[0]
+    x[roi_idx] = data_msm[roi-1]
+    y[roi_idx] = data_cha[roi-1]
+
+z = x-y # MSE(MSM-All)-MSE(CHA)
+z = z/max(abs(z)) # normalize between -1 to 1
+
+# Create  colormap using matplotlib
+import matplotlib.colors as mcolors
+def make_colormap(seq):
+    """Return a LinearSegmentedColormap
+    seq: a sequence of floats and RGB-tuples. The floats should be increasing
+    and in the interval (0,1).   """
+    seq = [(None,) * 3, 0.0] + list(seq) + [1.0, (None,) * 3]
+    cdict = {'red': [], 'green': [], 'blue': []}
+    for i, item in enumerate(seq):
+        if isinstance(item, float):
+            r1, g1, b1 = seq[i - 1]
+            r2, g2, b2 = seq[i + 1]
+            cdict['red'].append([item, r1, r2])
+            cdict['green'].append([item, g1, g2])
+            cdict['blue'].append([item, b1, b2])
+    return mcolors.LinearSegmentedColormap('CustomMap', cdict)
+c = mcolors.ColorConverter().to_rgb
+# ONLY CHANGE THIS PART
+# https://colordesigner.io/gradient-generator
+my_cmap = make_colormap(
+    [c('#363603'), c('#c2c208'), 0.15, 
+     c('#c2c208'), c('yellow'), 0.30,
+     c('yellow'), c('#fafabb'), 0.45,
+     c('#fafabb'), c('white'), 0.50,
+     c('white'), c('#e4b8ff'), 0.55, 
+     c('#e4b8ff'), c('purple'), 0.75,
+     c('purple'), c('#200033')])
+#N = 1000
+#array_dg = np.random.uniform(0, 10, size=(N, 2))
+#colors = np.random.uniform(-2, 2, size=(N,))
+#plt.scatter(array_dg[:, 0], array_dg[:, 1], c=colors, cmap=my_cmap)
+#plt.colorbar()
+#plt.show()
+
+# =============================================================================
+# # visualization using "plot_surf_stat_map"
+# atlas = hcp.mmp
+# view = 'lateral' # {‘lateral’, ‘medial’, ‘dorsal’, ‘ventral’, ‘anterior’, ‘posterior’},
+# h = 'left' # which hemisphere to train HA? 'left' or 'right'
+# if view == 'medial':
+#     if h == 'left':
+#         hcp_mesh = hcp.mesh.inflated_left
+#         hcp_data = hcp.left_cortex_data
+#         hcp_mesh_sulc = hcp.mesh.sulc_left
+#     elif h == 'right':
+#         hcp_mesh = hcp.mesh.inflated_right
+#         hcp_data = hcp.right_cortex_data
+#         hcp_mesh_sulc = hcp.mesh.sulc_right
+# else:
+#     hcp_mesh = hcp.mesh.inflated
+#     hcp_data = hcp.cortex_data
+#     hcp_mesh_sulc = hcp.mesh.sulc
+#     
+# plotting.plot_surf_stat_map(hcp_mesh, 
+#     hcp_data(z), 
+#     hemi=h, view=view, cmap=my_cmap, colorbar=True, #vmax=0.9, # cmap='RdYlBu_r', 'cold_hot', 'seismic_r' # https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html
+#     threshold=0.0000005, bg_map=hcp_mesh_sulc) # bg_map: a sulcal depth map for realistic shading
+# plt.savefig(view + '_aligned.pdf', dpi=300)
+# =============================================================================
+
+# interactive 3D visualization in a web browser ("view_surf")
+atlas = hcp.yeo17
+view = 'medial' # {‘whole’ or ‘medial’}
+h = 'right' # 'left' or 'right'
+if view == 'medial':
+    if h == 'left':
+        hcp_mesh = hcp.mesh.inflated_left
+        hcp_data = hcp.left_cortex_data
+        hcp_mesh_sulc = hcp.mesh.sulc_left
+    elif h == 'right':
+        hcp_mesh = hcp.mesh.inflated_right
+        hcp_data = hcp.right_cortex_data
+        hcp_mesh_sulc = hcp.mesh.sulc_right
+else:
+    hcp_mesh = hcp.mesh.inflated
+    hcp_data = hcp.cortex_data
+    hcp_mesh_sulc = hcp.mesh.sulc
+    
+figure = plotting.view_surf(hcp_mesh, # vmax=0.9,
+    hcp_data(z), cmap=my_cmap, # seismic_r
+    threshold=0.0000005, symmetric_cmap=False, colorbar=False, 
+    bg_map=hcp_mesh_sulc)
+figure.open_in_browser()
+
+#%% Regression (fine scale - global measures) + catplot
+import os
+import numpy as np
+import pandas as pd
+import pickle
+from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.svm import SVR
+from sklearn.metrics import mean_squared_error, r2_score
+from scipy.stats import spearmanr
+
+def train_and_evaluate_model(X_train, y_train, X_test, y_test):
+    reg = Ridge(alpha=1.0).fit(X_train, y_train) # Linear least squares with l2 regularization 
+    #reg = LinearRegression().fit(X_train, y_train) 
+    #reg = SVR(kernel='rbf', C=100, gamma=0.1, epsilon=.1).fit(X_train, y_train)
+    y_pred = reg.predict(X_test)    
+    mse = mean_squared_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
+    return mse, r2
+
+subjects = ['100206', '100307', '100408', '100610', '101006', '101107', '101309', '101915', '102008', '102311', '102513', '102816', '103111', '103414', '103515', '103818', '104012', '104416', '105014', '105115', '105216', '105620', '105923', '106016', '106319', '106521', '107018', '107321', '107422', '107725', '108121', '108222', '108323', '108525', '108828', '109123', '109325', '109830', '110007', '110411', '110613', '111009', '111312', '111413', '111716', '112112', '112314', '112516', '112920', '113215', '113619', '113922', '114217', '114318', '114419', '114621', '114823', '114924', '115017', '115219', '115320', '115825', '116524', '116726', '117122', '117324', '117930', '118124', '118528', '118730', '118932', '119126', '120212', '120515', '120717', '121416', '121618', '121921', '122317', '122620', '122822', '123117', '123420', '123521', '123824', '123925', '124220', '124422', '124624', '124826', '125525', '126325', '126628', '127327', '127630', '127933', '128026', '128127', '128632', '128935', '129028', '129129', '129331', '129634', '130013', '130316', '130417', '130619', '130821', '130922', '131217', '131419', '131722', '131823', '131924', '132017', '132118', '133019', '133827', '133928', '134021', '134223', '134324', '134425', '134728', '134829', '135225', '135528', '135730', '135932', '136227', '136732', '136833', '137027', '137128', '137229', '137633', '137936', '138231', '138534', '138837', '139233', '139637', '139839', '140319', '140824', '140925', '141119', '141826', '142828', '143426', '144125', '144428', '144832', '145127', '146129', '146331', '146432', '146533', '146937', '147030', '147737', '148032', '148133', '148335', '148840', '148941', '149236', '149337', '149539', '149741', '149842', '150625', '150726', '150928', '151223', '151425', '151526', '151627', '151728', '151829', '152831', '153025', '153227', '153429', '153631', '153833', '154229', '179245', '179346', '180129', '180432', '180735', '180836', '180937', '181131', '181232', '181636', '182032', '182436', '182739', '182840', '183034', '185139', '185341', '185442', '185846', '185947', '186141', '186444', '187143', '187547', '187850', '188347', '188448', '188751', '189349', '189450', '190031', '191033', '191336', '191437', '191942', '192035', '192136', '192540', '192641', '192843', '193239', '194140', '194645', '194746', '194847', '195041', '195647', '195849', '195950', '196144', '196346', '196750', '197348', '197550', '198249', '198350', '198451', '198653', '198855', '199150', '199251', '199453', '199655', '199958', '200008', '200614', '200917', '201111', '201414', '201818', '202113', '202719', '203418', '204016', '204319', '204420', '204622', '205725', '206222', '207123', '208024', '208125', '208226', '208327', '209127', '209228', '209329']
+n_subjects = 200
+
+sets = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
+        'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
+pred_set = np.array([[0, 1, 'MSM: REST1_RL'], [0, 2, 'MSM: REST2_LR'], [0, 3, 'MSM: REST2_RL'], [4, 5, 'CHA: REST1_RL'], [4, 6, 'CHA: REST2_LR'], [4, 7, 'CHA: REST2_RL']])
+
+behav = 'Fluid_intelligence' # Age_in_Yrs, BMI, Gender, DepressionScore, Fluid_intelligence
+demo = pd.read_excel('/Volumes/Elements/HCP_Motion/DemoData.xlsx', index_col='Subject')
+demo.index = demo.index.astype(str)
+behav_data = demo.loc[subjects[:n_subjects]]
+behav_data.fillna(behav_data.mean(), inplace=True)
+
+measures = ['path_length', 'global_clustering', 'global_efficiency', 'assortativity', 'modularity', 'small_worldness']
+mse_values = pd.DataFrame(index=measures, columns=[pred_set[i][2] for i in range(len(pred_set))])
+r2_values = pd.DataFrame(index=measures, columns=[pred_set[i][2] for i in range(len(pred_set))])
+
+for measure in measures:
+    for s in range(len(pred_set)):
+        
+        # Preparing training set
+        X_train = pd.DataFrame(columns=[str(roi) for roi in range(1, 361)])  # Set column names from 1 to 360
+        y_train = behav_data[behav]
+        for roi in range(1, 361):  # Loop over all ROIs (from 1 to 360)
+            filepath = f'/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/fine/graph_measures_roi{roi}' + '_' + sets[int(pred_set[s][0])] + '.pickle'
+            with open(filepath, 'rb') as f:
+                graph_measures = pickle.load(f) 
+            roi_data = pd.DataFrame(graph_measures[measure]).head(len(subjects))
+            roi_data.index = subjects[:n_subjects]
+            X_train[str(roi)] = roi_data.values.flatten()  # Add data for the current ROI to X_train
+        
+        # Preparing test set
+        X_test = pd.DataFrame(columns=[str(roi) for roi in range(1, 361)])  # Set column names from 1 to 360
+        y_test = behav_data[behav]
+        for roi in range(1, 361):  # Loop over all ROIs (from 1 to 360)
+            filepath = f'/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/fine/graph_measures_roi{roi}' + '_' + sets[int(pred_set[s][1])] + '.pickle'
+            with open(filepath, 'rb') as f:
+                graph_measures = pickle.load(f) 
+            roi_data = pd.DataFrame(graph_measures[measure]).head(len(subjects))
+            roi_data.index = subjects[:n_subjects]
+            X_test[str(roi)] = roi_data.values.flatten()  # Add data for the current ROI to X_test
+        
+        # Train and evaluate model
+        mse, r2 = train_and_evaluate_model(X_train, y_train, X_test, y_test)
+        mse_values.loc[measure, pred_set[s][2]] = mse
+        r2_values.loc[measure, pred_set[s][2]] = r2
+
+    print(measure)
+
+# =============================================================================
+# # Save Results
+# output_dir = '/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/'
+# filepath_mse = os.path.join(output_dir, 'results_mse_glob.pickle')
+# filepath_r2 = os.path.join(output_dir, 'results_r2_glob.pickle')
+# 
+# # Save results to a file
+# with open(filepath_mse, 'wb') as f:
+#     pickle.dump(mse_values, f)
+# with open(filepath_r2, 'wb') as f:
+#     pickle.dump(r2_values, f) 
+# =============================================================================
+    
+#%% Catplot
+import os
+import numpy as np
+import pickle
+import seaborn as sns
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Load results from the saved file
+output_dir = '/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/'
+filepath_mse = os.path.join(output_dir, 'results_mse_glob.pickle')
+filepath_r2 = os.path.join(output_dir, 'results_r2_glob.pickle')
+with open(filepath_mse, 'rb') as f:
+    results_mse = pickle.load(f)
+with open(filepath_r2, 'rb') as f:
+    results_r2 = pickle.load(f) 
+
+sets = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
+        'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
+pred_set = np.array([[0, 1, 'MSM: REST1_RL'], [0, 2, 'MSM: REST2_LR'], [0, 3, 'MSM: REST2_RL'], [4, 5, 'CHA: REST1_RL'], [4, 6, 'CHA: REST2_LR'], [4, 7, 'CHA: REST2_RL']])
+
+measures = ['path_length', 'global_clustering', 'global_efficiency', 'assortativity', 'modularity', 'small_worldness']
+
+# Set style and color palette
+sns.set(style="whitegrid")
+palette = ['#FFD700', '#7F00FF']
+
+# Create a new DataFrame with four columns
+data = []
+
+# Populate the list with the data
+for measure in measures:
+    for s in range(len(pred_set)):
+        mse_value = results_mse.at[measure, pred_set[s][2]]
+        test_value = pred_set[s][2].split(': ')[1]
+        alignment_value = pred_set[s][2].split(': ')[0]
+        data.append({'MSE': mse_value, 'Measure': measure, 'Test': test_value, 'Alignment': alignment_value})
+
+# Create the DataFrame
+df = pd.DataFrame(data)
+
+# Set plot style and dimensions
+sns.set(style="whitegrid")
+plt.figure(figsize=(10, 4))
+
+# Create the catplot
+ax = sns.catplot(x="Test", y="MSE", hue="Alignment", col="Measure",
+                 data=df, kind="bar", legend=False, legend_out=False,
+                 height=4, aspect=.8, sharey=False, palette=palette)
+
+# Set custom column names
+col_names = ['Path Length', 'Clustering Coefficient', 'Global Efficiency', 'Assortativity', 'Modularity (single-layer)', 'Small-worldness']
+for i, col_name in enumerate(col_names):
+    ax.axes[0][i].set_title(col_name, fontsize=14)
+
+# Set axis labels and ticks
+ax.set_axis_labels("", "MSE")
+ax.set_xticklabels(["T1: R2RL", "T2: R2LR", "T3: R2RL"])
+
+# Set plot limits and remove spines
+#ax.set(ylim=(0, 1))
+sns.despine(left=True)
+
+# Adjust layout and legend
+plt.tight_layout()
+plt.legend(loc='upper left')
+plt.subplots_adjust(wspace=0.15)
+
+# Save and show the plot
+plt.savefig('/Users/Farzad/Desktop/Figures/catplot_global_fine.pdf')
+plt.show()
+
+
+#%% Plot MSE (or R2) on the brain using workbench
+
+import os
+import pickle
+import nibabel as nib
+import numpy as np
+import hcp_utils as hcp
+
+# Load results from the saved file
+output_dir = '/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/'
+filepath_mse = os.path.join(output_dir, 'results_mse.pickle')
+filepath_r2 = os.path.join(output_dir, 'results_r2.pickle')
+with open(filepath_mse, 'rb') as f:
+    results_mse = pickle.load(f)
+with open(filepath_r2, 'rb') as f:
+    results_r2 = pickle.load(f) 
+
+mmp_path = '/Volumes/Elements/Hyperalignment/HCP/workbench/MMP/'
+
+# Load the CIFTI2 file
+nifti_file = mmp_path + '/S1200.MyelinMap_BC_MSMAll.32k_fs_LR.dscalar.nii'
+img = nib.load(nifti_file)
+
+# Get the data array
+data = img.get_fdata()
+
+# Create a new random vector with the same shape as the original data array
+new_data = np.random.rand(*data.shape) # (1, 59412)
+
+val1 = results_mse['closeness_centrality'].loc[:, 'MSM: REST2_RL']
+val2 = results_mse['closeness_centrality'].loc[:, 'CHA: REST2_RL']
+val = val1 - val2 # MSE(MSM-All)-MSE(CHA)
+val = val/max(abs(val)) # normalize between -1 to 1
+
+for roi in range(1, 361):
+    roi_idx = np.where(hcp.mmp.map_all[:59412] == roi)[0]
+    try:
+        new_data[0, roi_idx] = val[roi]
+    except FileNotFoundError:
+        pass # do nothing if the file doesn't exist
+
+# Create a copy of the data array and replace it with the new random vector
+new_img = nib.Cifti2Image(new_data, img.header)
+
+# Save the modified CIFTI2 file
+output_file = mmp_path + '/output/closeness_centrality_REST2_RL.dscalar.nii'
+nib.save(new_img, output_file)
+
+
+
+
+
+
 
 #%% Fingerprinting and Prediction (Coarse-scale)
 from scipy import stats
@@ -3395,37 +3915,467 @@ def get_lower_tri_heatmap(df, output="triangular_matrix.png"):
 get_lower_tri_heatmap(df_test1, output="triangular_test1.png")  
      
 
-#%% Graph analysis
+#%% #######################################################################
+# *****                     Modularity Analysis                       *****
+# #########################################################################
+
+""" Initial Preparation """
+    
+########### Step 1: Converting Time-Series (np) Data to CIFTI Format across Sessions/Subjects ###########
+import numpy as np
+import nibabel as nib
+
+# List of sessions and subjects
+sessions = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
+            'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
+
+subjects = ['100206', '100307', '100408', '100610', '101006', '101107', '101309', '101915', '102008', '102311', '102513', '102816', '103111', '103414', '103515', '103818', '104012', '104416', '105014', '105115', '105216', '105620', '105923', '106016', '106319', '106521', '107018', '107321', '107422', '107725', '108121', '108222', '108323', '108525', '108828', '109123', '109325', '109830', '110007', '110411', '110613', '111009', '111312', '111413', '111716', '112112', '112314', '112516', '112920', '113215', '113619', '113922', '114217', '114318', '114419', '114621', '114823', '114924', '115017', '115219', '115320', '115825', '116524', '116726', '117122', '117324', '117930', '118124', '118528', '118730', '118932', '119126', '120212', '120515', '120717', '121416', '121618', '121921', '122317', '122620', '122822', '123117', '123420', '123521', '123824', '123925', '124220', '124422', '124624', '124826', '125525', '126325', '126628', '127327', '127630', '127933', '128026', '128127', '128632', '128935', '129028', '129129', '129331', '129634', '130013', '130316', '130417', '130619', '130821', '130922', '131217', '131419', '131722', '131823', '131924', '132017', '132118', '133019', '133827', '133928', '134021', '134223', '134324', '134425', '134728', '134829', '135225', '135528', '135730', '135932', '136227', '136732', '136833', '137027', '137128', '137229', '137633', '137936', '138231', '138534', '138837', '139233', '139637', '139839', '140319', '140824', '140925', '141119', '141826', '142828', '143426', '144125', '144428', '144832', '145127', '146129', '146331', '146432', '146533', '146937', '147030', '147737', '148032', '148133', '148335', '148840', '148941', '149236', '149337', '149539', '149741', '149842', '150625', '150726', '150928', '151223', '151425', '151526', '151627', '151728', '151829', '152831', '153025', '153227', '153429', '153631', '153833', '154229', '179245', '179346', '180129', '180432', '180735', '180836', '180937', '181131', '181232', '181636', '182032', '182436', '182739', '182840', '183034', '185139', '185341', '185442', '185846', '185947', '186141', '186444', '187143', '187547', '187850', '188347', '188448', '188751', '189349', '189450', '190031', '191033', '191336', '191437', '191942', '192035', '192136', '192540', '192641', '192843', '193239', '194140', '194645', '194746', '194847', '195041', '195647', '195849', '195950', '196144', '196346', '196750', '197348', '197550', '198249', '198350', '198451', '198653', '198855', '199150', '199251', '199453', '199655', '199958', '200008', '200614', '200917', '201111', '201414', '201818', '202113', '202719', '203418', '204016', '204319', '204420', '204622', '205725', '206222', '207123', '208024', '208125', '208226', '208327', '209127', '209228', '209329']
+n_subjects = 200
+
+# Load a sample CIFTI file (dtseries) using nibabel
+#img_sample_path = '/Volumes/Elements/Hyperalignment/HCP/HCP900/disk1/100206/MNINonLinear/Results/rfMRI_REST1_LR/rfMRI_REST1_LR_Atlas_MSMAll_hp2000_clean.dtseries.nii'
+img_sample_path = '/dcl01/smart/data/hpc900/disk1/100206/MNINonLinear/Results/rfMRI_REST1_LR/rfMRI_REST1_LR_Atlas_MSMAll_hp2000_clean.dtseries.nii'
+img_sample = nib.load(img_sample_path)
+
+# Loop over all sessions and subjects
+for session in sessions:
+    # Loop over all subjects
+    for subject in subjects[:n_subjects]:
+        # Load numpy array for the current session/subject (time-series)
+        #np_array = np.load(f'/Volumes/Elements/Hyperalignment/HCP/200sbj/ts/{session}/{session}_{subject}.npy').astype(np.float32)
+        np_array = np.load(f'/dcs05/ciprian/smart/farahani/SL-CHA/ts/{session}/{session}_{subject}.npy').astype(np.float32)
+        # Create CIFTI image from numpy array, using the header information from the loaded CIFTI sample
+        img = nib.Cifti2Image(np_array, header=img_sample.header, nifti_header=img_sample.nifti_header)
+        # Modify the output file path using the current session and subject
+        #output_path = f'/Volumes/Elements/Hyperalignment/HCP/200sbj/dtseries/{session}/{session}_{subject}.dtseries.nii'
+        output_path = f'/dcs05/ciprian/smart/farahani/SL-CHA/dtseries/{session}/{session}_{subject}.dtseries.nii'
+        # Save the CIFTI image to the specified output file
+        img.to_filename(output_path)
+        print(session, subject)
+#%%
+####################### Step 2: Parcelate the Data using Yeo Atlas ############################
+import os
+# Set the current directory to where the workbench is located
+os.chdir('/Volumes/Elements/Hyperalignment/HCP/workbench/bin_macosx64/')
+# Setting the parcel template (Yeo7_1000 cortical parcels)
+template ='/Volumes/Elements/Hyperalignment/Parcellations/HCP/fslr32k/cifti/Schaefer2018_1000Parcels_7Networks_order.dlabel.nii'
+
+# List of sessions and subjects
+sessions = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
+            'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
+
+subjects = ['100206', '100307', '100408', '100610', '101006', '101107', '101309', '101915', '102008', '102311', '102513', '102816', '103111', '103414', '103515', '103818', '104012', '104416', '105014', '105115', '105216', '105620', '105923', '106016', '106319', '106521', '107018', '107321', '107422', '107725', '108121', '108222', '108323', '108525', '108828', '109123', '109325', '109830', '110007', '110411', '110613', '111009', '111312', '111413', '111716', '112112', '112314', '112516', '112920', '113215', '113619', '113922', '114217', '114318', '114419', '114621', '114823', '114924', '115017', '115219', '115320', '115825', '116524', '116726', '117122', '117324', '117930', '118124', '118528', '118730', '118932', '119126', '120212', '120515', '120717', '121416', '121618', '121921', '122317', '122620', '122822', '123117', '123420', '123521', '123824', '123925', '124220', '124422', '124624', '124826', '125525', '126325', '126628', '127327', '127630', '127933', '128026', '128127', '128632', '128935', '129028', '129129', '129331', '129634', '130013', '130316', '130417', '130619', '130821', '130922', '131217', '131419', '131722', '131823', '131924', '132017', '132118', '133019', '133827', '133928', '134021', '134223', '134324', '134425', '134728', '134829', '135225', '135528', '135730', '135932', '136227', '136732', '136833', '137027', '137128', '137229', '137633', '137936', '138231', '138534', '138837', '139233', '139637', '139839', '140319', '140824', '140925', '141119', '141826', '142828', '143426', '144125', '144428', '144832', '145127', '146129', '146331', '146432', '146533', '146937', '147030', '147737', '148032', '148133', '148335', '148840', '148941', '149236', '149337', '149539', '149741', '149842', '150625', '150726', '150928', '151223', '151425', '151526', '151627', '151728', '151829', '152831', '153025', '153227', '153429', '153631', '153833', '154229', '179245', '179346', '180129', '180432', '180735', '180836', '180937', '181131', '181232', '181636', '182032', '182436', '182739', '182840', '183034', '185139', '185341', '185442', '185846', '185947', '186141', '186444', '187143', '187547', '187850', '188347', '188448', '188751', '189349', '189450', '190031', '191033', '191336', '191437', '191942', '192035', '192136', '192540', '192641', '192843', '193239', '194140', '194645', '194746', '194847', '195041', '195647', '195849', '195950', '196144', '196346', '196750', '197348', '197550', '198249', '198350', '198451', '198653', '198855', '199150', '199251', '199453', '199655', '199958', '200008', '200614', '200917', '201111', '201414', '201818', '202113', '202719', '203418', '204016', '204319', '204420', '204622', '205725', '206222', '207123', '208024', '208125', '208226', '208327', '209127', '209228', '209329']
+n_subjects = 200
+
+for session in sessions:
+    for subject in subjects[:n_subjects]:
+        # Get the dtseries file
+        dtseries = f'/Volumes/Elements/Hyperalignment/HCP/200sbj/ts_cifti/{session}/{session}_{subject}.dtseries.nii'
+        # Output files for parcelated t-series
+        output = f'/Volumes/Elements/Hyperalignment/HCP/200sbj/ptseries/{session}/{session}_{subject}_Yeo7_1000.ptseries.nii'
+        # Parcellate dense time series using wb_command
+        os.system('./wb_command -cifti-parcellate ' + dtseries + ' ' + template + ' COLUMN ' + output + ' -method MEAN')
+    
+    print(session)
+
+#%% Meso-coarse: create FC .mat files
+import numpy as np
+import nibabel as nib
+from nilearn.connectome import ConnectivityMeasure
+from scipy.io import savemat 
+
+correlation_measure = ConnectivityMeasure(kind='correlation')
+
+# List of sessions and subjects
+sessions = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
+            'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
+
+subjects = ['100206', '100307', '100408', '100610', '101006', '101107', '101309', '101915', '102008', '102311', '102513', '102816', '103111', '103414', '103515', '103818', '104012', '104416', '105014', '105115', '105216', '105620', '105923', '106016', '106319', '106521', '107018', '107321', '107422', '107725', '108121', '108222', '108323', '108525', '108828', '109123', '109325', '109830', '110007', '110411', '110613', '111009', '111312', '111413', '111716', '112112', '112314', '112516', '112920', '113215', '113619', '113922', '114217', '114318', '114419', '114621', '114823', '114924', '115017', '115219', '115320', '115825', '116524', '116726', '117122', '117324', '117930', '118124', '118528', '118730', '118932', '119126', '120212', '120515', '120717', '121416', '121618', '121921', '122317', '122620', '122822', '123117', '123420', '123521', '123824', '123925', '124220', '124422', '124624', '124826', '125525', '126325', '126628', '127327', '127630', '127933', '128026', '128127', '128632', '128935', '129028', '129129', '129331', '129634', '130013', '130316', '130417', '130619', '130821', '130922', '131217', '131419', '131722', '131823', '131924', '132017', '132118', '133019', '133827', '133928', '134021', '134223', '134324', '134425', '134728', '134829', '135225', '135528', '135730', '135932', '136227', '136732', '136833', '137027', '137128', '137229', '137633', '137936', '138231', '138534', '138837', '139233', '139637', '139839', '140319', '140824', '140925', '141119', '141826', '142828', '143426', '144125', '144428', '144832', '145127', '146129', '146331', '146432', '146533', '146937', '147030', '147737', '148032', '148133', '148335', '148840', '148941', '149236', '149337', '149539', '149741', '149842', '150625', '150726', '150928', '151223', '151425', '151526', '151627', '151728', '151829', '152831', '153025', '153227', '153429', '153631', '153833', '154229', '179245', '179346', '180129', '180432', '180735', '180836', '180937', '181131', '181232', '181636', '182032', '182436', '182739', '182840', '183034', '185139', '185341', '185442', '185846', '185947', '186141', '186444', '187143', '187547', '187850', '188347', '188448', '188751', '189349', '189450', '190031', '191033', '191336', '191437', '191942', '192035', '192136', '192540', '192641', '192843', '193239', '194140', '194645', '194746', '194847', '195041', '195647', '195849', '195950', '196144', '196346', '196750', '197348', '197550', '198249', '198350', '198451', '198653', '198855', '199150', '199251', '199453', '199655', '199958', '200008', '200614', '200917', '201111', '201414', '201818', '202113', '202719', '203418', '204016', '204319', '204420', '204622', '205725', '206222', '207123', '208024', '208125', '208226', '208327', '209127', '209228', '209329']
+n_subjects = 200
+
+fc_path = '/Volumes/Elements/Hyperalignment/HCP/200sbj/ptseries_fc/'
+
+for session in sessions:
+    
+    ts_all = []
+    for subject in subjects[:n_subjects]:
+        file_path = f'/Volumes/Elements/Hyperalignment/HCP/200sbj/ptseries/{session}/{session}_{subject}_Yeo7_1000.ptseries.nii'
+        img = nib.load(file_path)
+        ts = np.array(img.get_fdata().astype(np.float32))
+        ts_all.append(ts)
+        
+    fc = correlation_measure.fit_transform(ts_all)
+    savemat(fc_path + session + '.mat', {session: fc}, do_compression=True) 
+    
+    print(session)
+
+#%% Meso-fine: create FC .mat files (Yeo17 Networks)
+import os
+import numpy as np
+import nibabel as nib
+import hcp_utils as hcp
+from nilearn.connectome import ConnectivityMeasure
+correlation_measure = ConnectivityMeasure(kind='correlation')
+from scipy.io import savemat 
+from brainconn import utils
+
+# qsub -cwd -t 1:17 meso_fine.sh
+
+#$ -l mem_free=150G,h_vmem=150G,h_fsize=50G --> net: {3, 7}
+#$ -l mem_free=100G,h_vmem=100G,h_fsize=50G --> net: {1, 4, 7, 16, 17}
+#$ -l mem_free=50G,h_vmem=50G,h_fsize=50G --> net: {others}
+
+net = int(os.getenv("SGE_TASK_ID")) # Network number in 17-Yeo Atlas
+# net = 1:17
+
+computer = 'JHPCE' # 'JHPCE' or 'local'
+
+# Setting the main path for subjetcs' ts/fc data
+if computer == 'JHPCE':
+    main_path = '/dcs05/ciprian/smart/farahani/SL-CHA/'
+elif computer == 'local':
+    main_path = '/Volumes/Elements/Hyperalignment/HCP/200sbj/'
+
+# List of sessions and subjects
+sessions = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
+            'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
+
+subjects = ['100206', '100307', '100408', '100610', '101006', '101107', '101309', '101915', '102008', '102311', '102513', '102816', '103111', '103414', '103515', '103818', '104012', '104416', '105014', '105115', '105216', '105620', '105923', '106016', '106319', '106521', '107018', '107321', '107422', '107725', '108121', '108222', '108323', '108525', '108828', '109123', '109325', '109830', '110007', '110411', '110613', '111009', '111312', '111413', '111716', '112112', '112314', '112516', '112920', '113215', '113619', '113922', '114217', '114318', '114419', '114621', '114823', '114924', '115017', '115219', '115320', '115825', '116524', '116726', '117122', '117324', '117930', '118124', '118528', '118730', '118932', '119126', '120212', '120515', '120717', '121416', '121618', '121921', '122317', '122620', '122822', '123117', '123420', '123521', '123824', '123925', '124220', '124422', '124624', '124826', '125525', '126325', '126628', '127327', '127630', '127933', '128026', '128127', '128632', '128935', '129028', '129129', '129331', '129634', '130013', '130316', '130417', '130619', '130821', '130922', '131217', '131419', '131722', '131823', '131924', '132017', '132118', '133019', '133827', '133928', '134021', '134223', '134324', '134425', '134728', '134829', '135225', '135528', '135730', '135932', '136227', '136732', '136833', '137027', '137128', '137229', '137633', '137936', '138231', '138534', '138837', '139233', '139637', '139839', '140319', '140824', '140925', '141119', '141826', '142828', '143426', '144125', '144428', '144832', '145127', '146129', '146331', '146432', '146533', '146937', '147030', '147737', '148032', '148133', '148335', '148840', '148941', '149236', '149337', '149539', '149741', '149842', '150625', '150726', '150928', '151223', '151425', '151526', '151627', '151728', '151829', '152831', '153025', '153227', '153429', '153631', '153833', '154229', '179245', '179346', '180129', '180432', '180735', '180836', '180937', '181131', '181232', '181636', '182032', '182436', '182739', '182840', '183034', '185139', '185341', '185442', '185846', '185947', '186141', '186444', '187143', '187547', '187850', '188347', '188448', '188751', '189349', '189450', '190031', '191033', '191336', '191437', '191942', '192035', '192136', '192540', '192641', '192843', '193239', '194140', '194645', '194746', '194847', '195041', '195647', '195849', '195950', '196144', '196346', '196750', '197348', '197550', '198249', '198350', '198451', '198653', '198855', '199150', '199251', '199453', '199655', '199958', '200008', '200614', '200917', '201111', '201414', '201818', '202113', '202719', '203418', '204016', '204319', '204420', '204622', '205725', '206222', '207123', '208024', '208125', '208226', '208327', '209127', '209228', '209329']
+n_subjects = 200
+
+net_idx = np.where(hcp.yeo17.map_all[:59412] == net)[0]
+
+for session in sessions:
+        
+    ts_all = []
+    for subject in subjects[:n_subjects]:
+        ts_path = os.path.join(main_path, 'dtseries', session, f"{session}_{subject}.dtseries.nii")
+        img = nib.load(ts_path)
+        ts = np.array(img.get_fdata().astype(np.float32))[:, net_idx]
+        ts_all.append(ts)
+        
+    fc = correlation_measure.fit_transform(ts_all)
+    
+    # Saving FCs
+    fc_path = os.path.join(main_path, 'fc_yeo17', f"net{net}", session)
+    os.makedirs(fc_path, exist_ok=True)
+    
+    # Binarize the FC matrix 
+    # Matrix too large to save with Matlab 5 format --> subjects one-by-one
+    threshold = 0.3
+    #binarized_fc = np.where(fc >= threshold, 1, 0).astype(np.int32)
+    for k, subject in enumerate(subjects[:n_subjects]): 
+        binarized_fc = utils.binarize(utils.threshold_proportional(fc[k], threshold, copy=True))
+        binarized_fc = np.float32(binarized_fc)
+        savemat(os.path.join(fc_path, f'{session}_{subject}.mat'), {'sbj_' + session: binarized_fc}, do_compression=True) 
+    
+    print(session)
+
+#%% Calculating allegiance, recruitment, integration, etc.
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy.io as sio
+
+# pip install teneto
+
+# https://teneto.readthedocs.io/en/latest/tutorial.html
+# https://teneto.readthedocs.io/en/latest/tutorial/networkmeasures.html
+from teneto import communitymeasures
+from nilearn import datasets
+n_set = 2
+
+# import community assignment of all groups
+S_g1 = sio.loadmat('/Volumes/Elements/Hyperalignment/HCP/200sbj/modularity/S_MSM_1.0,-1.0.mat', squeeze_me=True)['S_g1'];
+S_g2 = sio.loadmat('/Volumes/Elements/Hyperalignment/HCP/200sbj/modularity/S_CHA_1.0,-1.0.mat', squeeze_me=True)['S_g2'];
+communities = [S_g1, S_g2]
+
+atlas = datasets.fetch_atlas_schaefer_2018(n_rois=1000, yeo_networks=7, resolution_mm=1)
+labels = atlas.labels.astype('U') # covert array of bytes to array of strings
+
+# create static communities (networks' labels)
+networks = ['Vis', 'SomMot', 'DorsAttn', 'SalVentAttn', 'Limbic', 'Cont', 'Default']
+static_communities = np.zeros((1000,))
+# find networks in atlas.labels and assign a label[1-7] to each
+for i, network in enumerate(networks):   
+    idx = np.array([network in s for s in labels], dtype=bool)
+    static_communities[idx] = i+1 # 1-7
+
+static_communities[998] = 7
+static_communities[999] = 7
+
+allegiance, flexibility, integration, recruitment, promiscuity = [], [], [], [], []
+allegiance_coarse = []
+
+for s in range(n_set):
+    
+    allegiance.append(communitymeasures.allegiance(communities[s]))  
+    flexibility.append(communitymeasures.flexibility(communities[s]))
+    integration.append(communitymeasures.integration(communities[s], static_communities))
+    recruitment.append(communitymeasures.recruitment(communities[s], static_communities))
+    promiscuity.append(communitymeasures.promiscuity(communities[s])) # 0 entails only 1 community. 1 entails all communities
+        
+#plt.imshow(allegiance_coarse[1])
+#plt.colorbar()
+
+# regression between two groups [integration, recruitment]
+# define permutation test using monte-carlo method
+def perm_test(xs, ys, nmc):
+    n, k = len(xs), 0
+    diff = np.abs(np.mean(xs) - np.mean(ys))
+    zs = np.concatenate([xs, ys])
+    for j in range(nmc):
+        np.random.shuffle(zs)
+        k += diff < np.abs(np.mean(zs[:n]) - np.mean(zs[n:]))
+    return k / nmc
+
+#%% Allegiance --> fine scale
+import numpy as np
+import os
+import scipy.io as sio
+import hcp_utils as hcp
+# pip install teneto
+# https://teneto.readthedocs.io/en/latest/tutorial.html
+# https://teneto.readthedocs.io/en/latest/tutorial/networkmeasures.html
+from teneto import communitymeasures
+
+# qsub -cwd -t 1:17 allegiance.sh
+
+#idx = int(os.getenv("SGE_TASK_ID"))
+idx = 1
+
+atlas = hcp.yeo17 # {‘mmp’, ‘ca_parcels’, ‘ca_network’, ‘yeo7’, ‘yeo17’}
+#path = '/Volumes/Elements/Hyperalignment/HCP/200sbj/modularity/matlab_output/'
+path = '/dcs05/ciprian/smart/farahani/SL-CHA/modularity/matlab_output/'
+
+for net in range(idx,idx+1):
+    roi_idx = np.where(atlas.map_all[:59412] == net)[0] # only cortex  
+    
+    # import community assignment of sessions
+    communities = sio.loadmat(f'{path}S_net{net}.mat', squeeze_me=True)['S']
+
+    num_set = communities.shape[0]
+    
+    # create static communities (networks' labels)
+    static_communities = hcp.ca_parcels.map_all[roi_idx] # ca_parcels == mmp
+    
+    allegiance, flexibility, integration, recruitment = [], [], [], [] # promiscuity =[]
+    
+    for s in range(num_set):
+        allegiance.append(communitymeasures.allegiance(communities[s]))  
+        flexibility.append(communitymeasures.flexibility(communities[s]))
+        integration.append(communitymeasures.integration(communities[s], static_communities))
+        recruitment.append(communitymeasures.recruitment(communities[s], static_communities))
+        #promiscuity.append(communitymeasures.promiscuity(communities[s])) # 0 entails only 1 community. 1 entails all communities
+    
+    print("Network: {} --> Length: {}".format(net, len(roi_idx)))
+
+    #os.chdir('/Volumes/Elements/Hyperalignment/HCP/200sbj/modularity/allegiance/')
+    os.chdir('/dcs05/ciprian/smart/farahani/SL-CHA/modularity/allegiance/')
+    
+    np.save(f'allegiance_{net}', allegiance)
+    np.save(f'flexibility_{net}', flexibility)
+    np.save(f'integration_{net}', integration)
+    np.save(f'recruitment_{net}', recruitment)
+
+#%% plot regressions (scatter)
+
+group = ['MSM', 'CHA']; group_label = ['MSM', 'CHA']
+
+fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(8, 16))
+import seaborn as sns
+sns.set(style = 'white') # whitegrid
+# recruitment
+x = recruitment[0]
+y = recruitment[1]
+sns.regplot(x=x, y=y, ci=95, scatter_kws={"color":"black", "s": 60}, line_kws={"color":"red", 'label':'Regression line'}, ax=ax1)
+ax1.set_xlabel(group_label[0], fontsize=18) 
+ax1.set_ylabel(group_label[1], fontsize=18)
+ax1.set_title('Recruitment', fontsize=22)
+lims = [np.min([ax1.get_xlim(), ax1.get_ylim()]),  # min of both axes
+        np.max([ax1.get_xlim(), ax1.get_ylim()])]  # max of both axes
+ax1.plot(lims, lims, 'k--', alpha=0.8, zorder=0, label='Identity line')
+ax1.axis('square') # scaled, equal, square
+#ax1.collections[1].set_label('95% CI')
+ax1.legend(loc="best", fontsize=18)
+#perm_test(x, y, 30000)
+
+# integration
+x = integration[0]
+y = integration[1]
+sns.regplot(x=x, y=y, ci=95, scatter_kws={"color": "black", "s": 60}, line_kws={"color": "red", 'label':'Regression line'}, ax=ax2)
+y_min, y_max = ax2.get_ylim()
+x_min, x_max = ax2.get_xlim()
+ax2.set_xlabel(group_label[0], fontsize=18) 
+ax2.set_ylabel(group_label[1], fontsize=18)
+ax2.set_title('Integration', fontsize=22)
+lims = [np.min([ax2.get_xlim(), ax2.get_ylim()]),  # min of both axes
+        np.max([ax2.get_xlim(), ax2.get_ylim()])]  # max of both axes
+ax2.plot(lims, lims, 'k--', alpha=0.8, zorder=0, label='Identity line')
+ax2.axis('square') # scaled, equal, square
+#ax2.collections[1].set_label('95% CI')
+ax2.legend(loc="best", fontsize=18)
+#perm_test(x, y, 30000)
+
+plt.tight_layout(pad=2.0) # spacing between subplots
+plt.show()
+
+fig.savefig('/Volumes/Elements/Hyperalignment/HCP/200sbj/modularity/scatter_int&rec.pdf',
+            bbox_inches='tight', pad_inches=0, format='pdf', dpi=300)
+
+#%%
+
+import matplotlib.pyplot as plt
+
+# Create a figure with two subplots
+fig, axs = plt.subplots(1, 2)
+
+# Display the first matrix
+im1 = axs[0].imshow(allegiance[0], cmap='jet', interpolation='nearest')
+axs[0].set_title('Matrix 1')
+cbar1 = fig.colorbar(im1, ax=axs[0], shrink=0.4)  # Shrink the first colorbar
+
+# Display the second matrix
+im2 = axs[1].imshow(allegiance[1], cmap='jet', interpolation='nearest')
+axs[1].set_title('Matrix 2')
+cbar2 = fig.colorbar(im2, ax=axs[1], shrink=0.4)  # Shrink the second colorbar
+
+# Adjust the layout and spacing
+plt.tight_layout()
+
+# Show the figure
+#plt.show()
+
+plt.savefig('/Volumes/Elements/Hyperalignment/HCP/200sbj/modularity/allegiance.pdf',
+            bbox_inches='tight', pad_inches=0, format='pdf', dpi=300)
+
+#%% Allegiance matrix plots
+import matplotlib.patches as patches
+cmap='jet' # jet, rainbow, twilight, twilight_shifted, terrain, gist_earth, CMRmap
+# Group 1
+f = plt.figure(figsize=(15,11))
+plt.matshow(allegiance[0], fignum=f.number, vmin = 0, vmax = 1, cmap=cmap) # jet, rainbow, twilight_shifted, terrain, gist_earth, gnuplot, CMRmap
+plt.title(group_label[0], fontsize=26, y=1.05)
+#plt.xticks(range(allegiance[0].shape[1]), labels, fontsize=10, rotation=90) #systems or labels
+#plt.yticks(range(allegiance[0].shape[1]), labels, fontsize=10)
+plt.xticks([13.5, 29.5, 42.5, 53.5, 59.5, 72.5, 99.5, 114.5, 133.5, 146.5, 157.5, 163.5, 180.5])
+plt.yticks([13.5, 29.5, 42.5, 53.5, 59.5, 72.5, 99.5, 114.5, 133.5, 146.5, 157.5, 163.5, 180.5])
+cb = plt.colorbar(shrink=0.75) 
+cb.ax.tick_params(labelsize=18)
+plt.axvline(x=100-0.5,color='white',linewidth=3)
+plt.axhline(y=100-0.5,color='white',linewidth=3)
+# Draw grid lines
+plt.grid(color='white', linestyle='-', linewidth=0.7)
+plt.tick_params(
+    axis='both',       # changes apply to the x,y-axis
+    which='both',      # both major and minor ticks are affected
+    bottom=False,      # ticks along the bottom edge are off
+    top=False,         # ticks along the top edge are off
+    left=False,        # ticks along the left edge are off
+    right=False,       # ticks along the right edge are off
+    labeltop=False,    # labels along the top edge are off
+    labelleft=False)   # labels along the left edge are off
+# Add rectangle objects as tick labels (X axis)
+xmin, xmax, ymin, ymax = plt.axis()
+h = (ymax-ymin)/30; space = h/5; i = ymax + space # intercept
+plt.gca().add_patch(patches.Rectangle((-0.5, i), width=13.5+0.5, height=h, facecolor='#A251AC', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((13.5, i), width=29.5-13.5, height=h, facecolor='#789AC1', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((29.5, i), width=42.5-29.5, height=h, facecolor='#409832', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((42.5, i), width=53.5-42.5, height=h, facecolor='#E165FE', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((53.5, i), width=59.5-53.5, height=h, facecolor='#F6FDC9', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((59.5, i), width=72.5-59.5, height=h, facecolor='#EFB944', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((72.5, i), width=99.5-72.5, height=h, facecolor='#D9717D', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((99.5, i), width=114.5-99.5, height=h, facecolor='#A251AC', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((114.5, i), width=133.5-114.5, height=h, facecolor='#789AC1', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((133.5, i), width=146.5-133.5, height=h, facecolor='#409832', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((146.5, i), width=157.5-146.5, height=h, facecolor='#E165FE', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((157.5, i), width=163.5-157.5, height=h, facecolor='#F6FDC9', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((163.5, i), width=180.5-163.5, height=h, facecolor='#EFB944', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((180.5, i), width=199.5-180.5, height=h, facecolor='#D9717D', clip_on=False, linewidth=1.5, edgecolor='k'))
+# Add rectangle objects as tick labels (Y axis)
+w = (ymax-ymin)/30; i = ymax # intercept
+plt.gca().add_patch(patches.Rectangle((i+space, -0.5), width=w, height=13.5+0.5, facecolor='#A251AC', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 13.5), width=w, height=29.5-13.5, facecolor='#789AC1', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 29.5), width=w, height=42.5-29.5, facecolor='#409832', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 42.5), width=w, height=53.5-42.5, facecolor='#E165FE', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 53.5), width=w, height=59.5-53.5, facecolor='#F6FDC9', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 59.5), width=w, height=72.5-59.5, facecolor='#EFB944', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 72.5), width=w, height=99.5-72.5, facecolor='#D9717D', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 99.5), width=w, height=114.5-99.5, facecolor='#A251AC', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 114.5), width=w, height=133.5-114.5, facecolor='#789AC1', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 133.5), width=w, height=146.5-133.5, facecolor='#409832', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 146.5), width=w, height=157.5-146.5, facecolor='#E165FE', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 157.5), width=w, height=163.5-157.5, facecolor='#F6FDC9', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 163.5), width=w, height=180.5-163.5, facecolor='#EFB944', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 180.5), width=w, height=199.5-180.5, facecolor='#D9717D', clip_on=False, linewidth=1.5, edgecolor='k'))
+
+plt.tight_layout()
+plt.savefig('/Volumes/Elements/SCI/figures/allegiance_g1'+analysis+'.pdf',
+            bbox_inches='tight', pad_inches=0, format='pdf', dpi=300)
+
+# Group 2
+f = plt.figure(figsize=(15,11))
+plt.matshow(allegiance[1], fignum=f.number, vmin = 0, vmax = 1, cmap=cmap) # jet, rainbow, twilight_shifted, terrain, gist_earth, gnuplot, CMRmap
+plt.title(group_label[1], fontsize=26, y=1.05)
+#plt.xticks(range(allegiance[0].shape[1]), labels, fontsize=10, rotation=90) #systems or labels
+#plt.yticks(range(allegiance[0].shape[1]), labels, fontsize=10)
+plt.xticks([13.5, 29.5, 42.5, 53.5, 59.5, 72.5, 99.5, 114.5, 133.5, 146.5, 157.5, 163.5, 180.5])
+plt.yticks([13.5, 29.5, 42.5, 53.5, 59.5, 72.5, 99.5, 114.5, 133.5, 146.5, 157.5, 163.5, 180.5])
+cb = plt.colorbar(shrink=0.75) 
+cb.ax.tick_params(labelsize=18)
+plt.axvline(x=100-0.5,color='white',linewidth=3)
+plt.axhline(y=100-0.5,color='white',linewidth=3)
+# Draw grid lines
+plt.grid(color='white', linestyle='-', linewidth=0.7)
+plt.tick_params(
+    axis='both',       # changes apply to the x,y-axis
+    which='both',      # both major and minor ticks are affected
+    bottom=False,      # ticks along the bottom edge are off
+    top=False,         # ticks along the top edge are off
+    left=False,        # ticks along the left edge are off
+    right=False,       # ticks along the right edge are off
+    labeltop=False,    # labels along the top edge are off
+    labelleft=False)   # labels along the left edge are off
+# Add rectangle objects as tick labels (X axis)
+xmin, xmax, ymin, ymax = plt.axis()
+h = (ymax-ymin)/30; space = h/5; i = ymax + space # intercept
+plt.gca().add_patch(patches.Rectangle((-0.5, i), width=13.5+0.5, height=h, facecolor='#A251AC', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((13.5, i), width=29.5-13.5, height=h, facecolor='#789AC1', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((29.5, i), width=42.5-29.5, height=h, facecolor='#409832', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((42.5, i), width=53.5-42.5, height=h, facecolor='#E165FE', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((53.5, i), width=59.5-53.5, height=h, facecolor='#F6FDC9', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((59.5, i), width=72.5-59.5, height=h, facecolor='#EFB944', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((72.5, i), width=99.5-72.5, height=h, facecolor='#D9717D', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((99.5, i), width=114.5-99.5, height=h, facecolor='#A251AC', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((114.5, i), width=133.5-114.5, height=h, facecolor='#789AC1', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((133.5, i), width=146.5-133.5, height=h, facecolor='#409832', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((146.5, i), width=157.5-146.5, height=h, facecolor='#E165FE', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((157.5, i), width=163.5-157.5, height=h, facecolor='#F6FDC9', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((163.5, i), width=180.5-163.5, height=h, facecolor='#EFB944', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((180.5, i), width=199.5-180.5, height=h, facecolor='#D9717D', clip_on=False, linewidth=1.5, edgecolor='k'))
+# Add rectangle objects as tick labels (Y axis)
+w = (ymax-ymin)/30; i = ymax # intercept
+plt.gca().add_patch(patches.Rectangle((i+space, -0.5), width=w, height=13.5+0.5, facecolor='#A251AC', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 13.5), width=w, height=29.5-13.5, facecolor='#789AC1', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 29.5), width=w, height=42.5-29.5, facecolor='#409832', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 42.5), width=w, height=53.5-42.5, facecolor='#E165FE', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 53.5), width=w, height=59.5-53.5, facecolor='#F6FDC9', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 59.5), width=w, height=72.5-59.5, facecolor='#EFB944', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 72.5), width=w, height=99.5-72.5, facecolor='#D9717D', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 99.5), width=w, height=114.5-99.5, facecolor='#A251AC', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 114.5), width=w, height=133.5-114.5, facecolor='#789AC1', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 133.5), width=w, height=146.5-133.5, facecolor='#409832', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 146.5), width=w, height=157.5-146.5, facecolor='#E165FE', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 157.5), width=w, height=163.5-157.5, facecolor='#F6FDC9', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 163.5), width=w, height=180.5-163.5, facecolor='#EFB944', clip_on=False, linewidth=1.5, edgecolor='k'))
+plt.gca().add_patch(patches.Rectangle((i+space, 180.5), width=w, height=199.5-180.5, facecolor='#D9717D', clip_on=False, linewidth=1.5, edgecolor='k'))
+
+plt.tight_layout()
+plt.savefig('/Volumes/Elements/SCI/figures/allegiance_g2'+analysis+'.pdf',
+            bbox_inches='tight', pad_inches=0, format='pdf', dpi=300)
+#%%
 
 # install "brainconn" from their github repository
 # !pip install git+https://github.com/FIU-Neuro/brainconn#egg=brainconn
-
-# necessary imports
-import os # os.path as op
-import numpy as np
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-import brainconn
-import networkx as nx
-from nilearn.connectome import ConnectivityMeasure
-from brainconn import degree, centrality, clustering, core, distance, modularity, utils
-from netneurotools import stats as nnstats
-import nilearn.plotting as plotting
-import hcp_utils as hcp
-import scipy.io as sio
-from scipy.io import savemat
-
-# calculating correlations
-correlation_measure = ConnectivityMeasure(kind='correlation') # kind{“correlation”, “partial correlation”, “tangent”, “covariance”, “precision”}, optional
-os.chdir('/Volumes/Elements/Hyperalignment/HCP/results_30sbj/ts_mmp_roi/') # /mmp/ or /yeo17/
-#os.chdir('/dcl01/smart/data/fvfarahani/searchlight/ts_yeo17/')
-#os.chdir('/users/ffarahan/')
-atls = 'mmp' # mmp or yeo17 or ca_network
-num_roi = 360 # 360, 17, 12
-n_sbj = 30
-
-
 
 # ======= save corr/bin matrices for modularity analysis (regions) ======================================================================
 # path = '/Volumes/Elements/Hyperalignment/HCP/results_30sbj/corr_regional/' + atls + '/'
@@ -3521,63 +4471,6 @@ n_sbj = 30
 #     print('Run: {}'.format(run))
 # =============================================================================
 
-num_loc_measure = 8
-num_glb_measure = 6
-num_measure = num_loc_measure + num_glb_measure
-
-# global measures + std
-lam = [[[] for i in range(8)] for i in range(num_roi)] # lambda (characteristic path length)
-eff = [[[] for i in range(8)] for i in range(num_roi)] # global efficieny
-clc = [[[] for i in range(8)] for i in range(num_roi)] # global clustering coefficients
-tra = [[[] for i in range(8)] for i in range(num_roi)] # Transitivity
-ass = [[[] for i in range(8)] for i in range(num_roi)] # assortativity
-mod = [[[] for i in range(8)] for i in range(num_roi)] # modularity
-
-std_lam = [[] for i in range(8)]
-std_eff = [[] for i in range(8)]
-std_clc = [[] for i in range(8)]
-std_tra = [[] for i in range(8)]
-std_ass = [[] for i in range(8)]
-std_mod = [[] for i in range(8)]
-
-# local std
-std_deg_l = [[] for i in range(8)] # 8 sets
-std_stg_l = [[] for i in range(8)]
-std_eig_l = [[] for i in range(8)]
-std_clc_l = [[] for i in range(8)]
-std_eff_l = [[] for i in range(8)]
-std_par_l = [[] for i in range(8)]
-std_zsc_l = [[] for i in range(8)]
-#std_rch_l = [[] for i in range(8)]
-std_kco_l = [[] for i in range(8)]
-
-# Loading questionnaires's indices (for correlation analysis)
-IQ = []
-file_in = open('/Volumes/Elements/Hyperalignment/HCP/IQ.txt', 'r')
-#file_in = open('/users/ffarahan/IQ.txt', 'r') # temporal
-for z in file_in.read().split('\n'):
-    IQ.append(float(z))
-#questionnaire = {'AM': np.array(am), 'ESS': np.array(ess), 'PW': np.array(pw)}
-questionnaire = {'IQ': np.array(IQ)}
-questionnaire_list = ['IQ']
-# Set up a correlation vector (measure * Q_index) corresponding to a value for each region in the parcellation.
-index = 'IQ' # Questionnaire index {AM, ESS, PW}
-n_perm = 500
-
-n_components = 30
-mse_reg, r2_reg = [], []
-mse_pcr, r2_pcr = [], []
-mse_pls, r2_pls = [], []
-for i in range(num_loc_measure):
-    mse_reg.append(np.zeros([num_roi, 6])) # 6 distinct pred_sets
-    r2_reg.append(np.zeros([num_roi, 6]))
-    mse_pcr.append(np.zeros([num_roi, 6]))
-    r2_pcr.append(np.zeros([num_roi, 6]))
-    mse_pls.append(np.zeros([num_roi, 6]))
-    r2_pls.append(np.zeros([num_roi, 6]))
-
-ci = sio.loadmat('/Volumes/Elements/Modularity/var_mmp/S_a_1.0,-1.0.mat', squeeze_me=True)['S_a']
-#%%
 for roi in range(1,num_roi+1): # example, 149 PFm # range(1,num_roi+1)
 #for roi in range(1,18): # region/network of interet
     
@@ -3635,193 +4528,7 @@ for roi in range(1,num_roi+1): # example, 149 PFm # range(1,num_roi+1)
     #savemat(corr_path + 'corr_aligned_REST2.mat', {'corr_aligned_REST2': corr_aligned_REST2})
     """
     
-    print(roi)
-    
-    """ # if needed: writing correlation matrices as txt files
-    corr_path = '/Volumes/Elements/Hyperalignment/HCP/results_30sbj/corr_regional/Yeo17_11/'
-    n_sbj = 30
-    for k in range(n_sbj):  
-        np.savetxt(corr_path + '/unaligned/rest1LR/' + 'sbj' + str(k+1) + '.txt', corr_rest1LR[k], fmt='%.18e', delimiter=' ', newline='\n')
-        np.savetxt(corr_path + '/unaligned/rest1RL/' + 'sbj' + str(k+1) + '.txt', corr_rest1RL[k], fmt='%.18e', delimiter=' ', newline='\n')
-        np.savetxt(corr_path + '/unaligned/rest2LR/' + 'sbj' + str(k+1) + '.txt', corr_rest2LR[k], fmt='%.18e', delimiter=' ', newline='\n')
-        np.savetxt(corr_path + '/unaligned/rest2RL/' + 'sbj' + str(k+1) + '.txt', corr_rest2RL[k], fmt='%.18e', delimiter=' ', newline='\n')
-        np.savetxt(corr_path + '/aligned/rest1LR/' + 'sbj' + str(k+1) + '.txt', corr_aligned_rest1LR[k], fmt='%.18e', delimiter=' ', newline='\n')
-        np.savetxt(corr_path + '/aligned/rest1RL/' + 'sbj' + str(k+1) + '.txt', corr_aligned_rest1RL[k], fmt='%.18e', delimiter=' ', newline='\n')
-        np.savetxt(corr_path + '/aligned/rest2LR/' + 'sbj' + str(k+1) + '.txt', corr_aligned_rest2LR[k], fmt='%.18e', delimiter=' ', newline='\n')
-        np.savetxt(corr_path + '/aligned/rest2RL/' + 'sbj' + str(k+1) + '.txt', corr_aligned_rest2RL[k], fmt='%.18e', delimiter=' ', newline='\n')       
-        #np.savetxt(corr_path + '/unaligned/REST1/' + 'sbj' + str(k+1) + '.txt', corr_REST1[k], fmt='%.18e', delimiter=' ', newline='\n')
-        #np.savetxt(corr_path + '/unaligned/REST2/' + 'sbj' + str(k+1) + '.txt', corr_REST2[k], fmt='%.18e', delimiter=' ', newline='\n')
-        #np.savetxt(corr_path + '/aligned/REST1/' + 'sbj' + str(k+1) + '.txt', corr_aligned_REST1[k], fmt='%.18e', delimiter=' ', newline='\n')
-        #np.savetxt(corr_path + '/aligned/REST2/' + 'sbj' + str(k+1) + '.txt', corr_aligned_REST2[k], fmt='%.18e', delimiter=' ', newline='\n')
-        print(k)    
-    """
-    
-    # remove the self-connections (zero diagonal) and create weighted graphs
-    adj_wei = [[] for i in range(8)] # 8 sets (list of lists; wrong way -> adj_wei = [[]] * 8)
-    adj_bin = [[] for i in range(8)]
-    con_len = [[] for i in range(8)] # weighted connection-length matrix for 8 sets
-    thld = 0.3
-    for k in range(n_sbj): 
-        np.fill_diagonal(corr_rest1LR[k], 0)
-        np.fill_diagonal(corr_rest1RL[k], 0)
-        np.fill_diagonal(corr_rest2LR[k], 0)
-        np.fill_diagonal(corr_rest2RL[k], 0)
-        np.fill_diagonal(corr_aligned_rest1LR[k], 0)
-        np.fill_diagonal(corr_aligned_rest1RL[k], 0)
-        np.fill_diagonal(corr_aligned_rest2LR[k], 0)
-        np.fill_diagonal(corr_aligned_rest2RL[k], 0)
-        # weighted
-        adj_wei[0].append(corr_rest1LR[k])
-        adj_wei[1].append(corr_rest1RL[k])
-        adj_wei[2].append(corr_rest2LR[k])
-        adj_wei[3].append(corr_rest2RL[k])
-        adj_wei[4].append(corr_aligned_rest1LR[k])
-        adj_wei[5].append(corr_aligned_rest1RL[k])
-        adj_wei[6].append(corr_aligned_rest2LR[k])
-        adj_wei[7].append(corr_aligned_rest2RL[k])
-        # weighted connection-length matrix (connection lengths is needed prior to computation of weighted distance-based measures, such as distance and betweenness centrality)
-        # L_ij = 1/W_ij for all nonzero L_ij; higher connection weights intuitively correspond to shorter lengths
-        con_len[0].append(utils.weight_conversion(adj_wei[0][k], 'lengths', copy=True))
-        con_len[1].append(utils.weight_conversion(adj_wei[1][k], 'lengths', copy=True))
-        con_len[2].append(utils.weight_conversion(adj_wei[2][k], 'lengths', copy=True))
-        con_len[3].append(utils.weight_conversion(adj_wei[3][k], 'lengths', copy=True))
-        con_len[4].append(utils.weight_conversion(adj_wei[4][k], 'lengths', copy=True))
-        con_len[5].append(utils.weight_conversion(adj_wei[5][k], 'lengths', copy=True))
-        con_len[6].append(utils.weight_conversion(adj_wei[6][k], 'lengths', copy=True))
-        con_len[7].append(utils.weight_conversion(adj_wei[7][k], 'lengths', copy=True))
-        # binary
-        adj_bin[0].append(brainconn.utils.binarize(brainconn.utils.threshold_proportional(adj_wei[0][k], thld, copy=True)))
-        adj_bin[1].append(brainconn.utils.binarize(brainconn.utils.threshold_proportional(adj_wei[1][k], thld, copy=True)))
-        adj_bin[2].append(brainconn.utils.binarize(brainconn.utils.threshold_proportional(adj_wei[2][k], thld, copy=True)))
-        adj_bin[3].append(brainconn.utils.binarize(brainconn.utils.threshold_proportional(adj_wei[3][k], thld, copy=True)))
-        adj_bin[4].append(brainconn.utils.binarize(brainconn.utils.threshold_proportional(adj_wei[4][k], thld, copy=True)))
-        adj_bin[5].append(brainconn.utils.binarize(brainconn.utils.threshold_proportional(adj_wei[5][k], thld, copy=True)))
-        adj_bin[6].append(brainconn.utils.binarize(brainconn.utils.threshold_proportional(adj_wei[6][k], thld, copy=True)))
-        adj_bin[7].append(brainconn.utils.binarize(brainconn.utils.threshold_proportional(adj_wei[7][k], thld, copy=True)))    
-       
-    # plot weighted/binary adjacency matrix [0,1,2,3,4,5,6,7]
-    #fig, ax = plt.subplots(figsize=(7, 7))
-    #x.imshow(adj_bin[0][2])
-    #fig.show()    
-       
-    # define local measures    
-    deg_l = [[] for i in range(8)] # 8 sets
-    stg_l = [[] for i in range(8)]
-    eig_l = [[] for i in range(8)]
-    clc_l = [[] for i in range(8)]
-    eff_l = [[] for i in range(8)]
-    par_l = [[] for i in range(8)]
-    zsc_l = [[] for i in range(8)]
-    #rch_l = [[] for i in range(8)]
-    kco_l = [[] for i in range(8)]
-    
-    
-    # compute global measures
-    for i in range(8):
-        for k in range(n_sbj): 
-            dis = distance.distance_wei(con_len[i][k])[0] # TIME CONSUMING  
-            lam[r][i].append(distance.charpath(dis, include_diagonal=False, include_infinite=True)[0])
-            eff[r][i].append(distance.charpath(dis, include_diagonal=False, include_infinite=True)[1])
-            clc[r][i].append(np.mean(clustering.clustering_coef_wu(adj_wei[i][k])))
-            tra[r][i].append(clustering.transitivity_wu(adj_wei[i][k]))
-            ass[r][i].append(core.assortativity_wei(adj_wei[i][k], flag=0)) # 0: undirected graph
-            mod[r][i].append(modularity.modularity_louvain_und(adj_wei[i][k], gamma=1, hierarchy=False, seed=None)[1])                
-                                   
-    # compute local measures
-    for i in range(8):
-        for k in range(n_sbj): 
-            deg_l[i].append(degree.degrees_und(adj_bin[i][k]))
-            stg_l[i].append(degree.strengths_und(adj_wei[i][k]))
-            eig_l[i].append(centrality.eigenvector_centrality_und(adj_bin[i][k]))
-            clc_l[i].append(clustering.clustering_coef_bu(adj_bin[i][k]))
-            eff_l[i].append(distance.efficiency_bin(adj_bin[i][k], local=True)) #eff_l[i].append(distance.efficiency_wei(adj_wei[i][k], local=True)) # TIME CONSUMING             
-            par_l[i].append(centrality.participation_coef(adj_bin[i][k], ci[r][i,k,:], degree='undirected'))
-            zsc_l[i].append(centrality.module_degree_zscore(adj_bin[i][k], ci[r][i,k,:], flag=0)) # 0: undirected graph
-            #rch_l[i].append(core.rich_club_bu(adj_bin[i][k])[0])
-            kco_l[i].append(centrality.kcoreness_centrality_bu(adj_bin[i][k])[0])
-            #print('Subject: ', k)
-        #print('Set: ', i)            
-            
-    deg_l = np.array(deg_l) 
-    stg_l = np.array(stg_l) 
-    eig_l = np.array(eig_l) 
-    clc_l = np.array(clc_l)
-    eff_l = np.array(eff_l)
-    par_l = np.array(par_l) 
-    zsc_l = np.array(zsc_l) 
-    #rch_l = np.array(rch_l) 
-    kco_l = np.array(kco_l) 
-     
-    #from networkx.algorithms.smallworld import sigma
-    #G = nx.from_numpy_matrix(adj_wei[0][1])     
-    #sigma(G, niter=10, nrand=5, seed=None)
-       
-    # standard deviations of all nodes(vertices)/brains
-    for i in range(8):
-        # local measures        
-        std_deg_l[i].append(np.std(deg_l[i], axis=0))
-        std_stg_l[i].append(np.std(stg_l[i], axis=0))
-        std_eig_l[i].append(np.std(eig_l[i], axis=0))
-        std_clc_l[i].append(np.std(clc_l[i], axis=0))
-        std_eff_l[i].append(np.std(eff_l[i], axis=0))
-        std_par_l[i].append(np.std(par_l[i], axis=0))
-        std_zsc_l[i].append(np.std(zsc_l[i], axis=0))
-        #std_rch_l[i].append(np.std(rch_l[i], axis=0))
-        std_kco_l[i].append(np.std(kco_l[i], axis=0))
-        # global measures
-        std_lam[i].append(np.std(lam[r][i], axis=0))
-        std_eff[i].append(np.std(eff[r][i], axis=0))
-        std_clc[i].append(np.std(clc[r][i], axis=0))
-        std_tra[i].append(np.std(tra[r][i], axis=0))
-        std_ass[i].append(np.std(ass[r][i], axis=0))
-        std_mod[i].append(np.std(mod[r][i], axis=0))
-        
-    # Regression models
-    # https://scikit-learn.org/stable/auto_examples/cross_decomposition/plot_pcr_vs_pls.html#sphx-glr-auto-examples-cross-decomposition-plot-pcr-vs-pls-py
-    from sklearn.linear_model import LinearRegression, Ridge, RidgeCV
-    from sklearn.pipeline import make_pipeline
-    from sklearn.preprocessing import StandardScaler
-    from sklearn.decomposition import PCA
-    from sklearn.cross_decomposition import PLSRegression
-    from sklearn.metrics import mean_squared_error, r2_score
-    
-    local_measure = [deg_l, stg_l, eig_l, clc_l, eff_l, par_l, zsc_l, kco_l] #eloc_w, rch_l, 
-    pred_set = np.array([[0, 1], [0, 2], [0, 3], [4, 5], [4, 6], [4, 7]])
-    for i in range(len(local_measure)):
-        for s in range(np.shape(pred_set)[0]):
-            # Training/testing sets and target variable
-            X_train, y_train = local_measure[i][pred_set[s][0]], questionnaire[index]
-            X_test, y_test = local_measure[i][pred_set[s][1]], questionnaire[index]
-            
-            # Create linear regression object
-            #reg = LinearRegression() # Ordinary least squares Linear Regression
-            reg = Ridge(alpha=1.0) # Linear least squares with l2 regularization
-            #reg = make_pipeline(StandardScaler(), Ridge(alpha=1.0))
-            #reg = RidgeCV(alphas=[1e-3, 1e-2, 1e-1, 1]) # Ridge regression with built-in cross-validation (Leave-One-Out)
-            #pcr = make_pipeline(StandardScaler(), PCA(n_components=n_components), LinearRegression()) # n_components must be between 0 and min(n_samples, n_features)
-            #pls = PLSRegression(n_components=n_components)
-            
-            # Train the model using the training sets
-            reg.fit(X_train, y_train)
-            #pcr.fit(X_train, y_train)
-            #pls.fit(X_train, y_train)
-            
-            # Make predictions using the testing set
-            y_pred_reg = reg.predict(X_test)
-            #y_pred_pcr = pcr.predict(X_test)
-            #y_pred_pls = pls.predict(X_test)
-            
-            # The mean squared error
-            mse_reg[i][r,s] = mean_squared_error(y_test, y_pred_reg)
-            #mse_pcr[i][r,s] = mean_squared_error(y_test, y_pred_pcr)
-            #mse_pls[i][r,s] = mean_squared_error(y_test, y_pred_pls)
-            
-            # The coefficient of determination: 1 is perfect prediction
-            r2_reg[i][r,s] = r2_score(y_test, y_pred_reg)
-            #r2_pcr[i][r,s] = r2_score(y_test, y_pred_pcr)
-            #r2_pls[i][r,s] = r2_score(y_test, y_pred_pls)
-        
-    print('ROI: ', roi)
+
 
 #%%
 np.save('/Users/Farzad/Desktop/Figures/mse_glob_reg', mse_glob_reg)
@@ -3927,6 +4634,7 @@ for i in range(len(global_measure)):
         mse_glob_reg[i].append(mean_squared_error(y_test, y_pred_reg))        
         # The coefficient of determination: 1 is perfect prediction
         r2_glob_reg[i].append(r2_score(y_test, y_pred_reg))
+
 # catplot (multiple barplot)
 sns.set(style="whitegrid")
 data = np.reshape(mse_glob_reg, (num*6,)) # 5 measures
@@ -4042,56 +4750,6 @@ figure = plotting.view_surf(hcp_mesh, # vmax=0.9,
     threshold=0.0000005, symmetric_cmap=False, colorbar=True, 
     bg_map=hcp_mesh_sulc)
 figure.open_in_browser()
-
-#%% Raincloud plots (with annotation) and Barplot 
-
-# Raincloud plots
-import numpy as np
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-import ptitprince as pt # pip install ptitprince
-# https://d212y8ha88k086.cloudfront.net/manuscripts/16574/2509d3d1-e074-4b6a-86d4-497f4cb0895c_15191_-_rogier_kievit.pdf?doi=10.12688/wellcomeopenres.15191.1&numberOfBrowsableCollections=8&numberOfBrowsableInstitutionalCollections=0&numberOfBrowsableGateways=14
-mse_reg = np.load('/Users/Farzad/Desktop/Figures/mse_reg.npy')
-
-var_name = ['Degree Centrality', 'Strengths', 'Eigenvector Centrality', 'Clustering Coefficient', 'Local Efficiency', 'Participation Coefficient', 'Within-module Degree', 'K-coreness'] # 'Rich Club Coefficient', 
-idx = [0,3,4,5,6,7]
-mse_loc = [mse_reg[index] for index in idx] # Create list of chosen list items
-sns.set_style("white")
-f, axes = plt.subplots(nrows=2, ncols=3, sharex=False, sharey=True, figsize=(13, 8)) # dpi=300
-for i, ax in enumerate(axes.flatten()):
-    data = np.reshape(mse_loc[i].T, (6*360,)) # concatenate MSE array of a given measure
-    df = pd.DataFrame(data=data, columns=["MSE"]) # index=rows
-    group = np.concatenate((np.repeat(['1'],360,axis=0), np.repeat(['2'],360,axis=0), np.repeat(['3'],360,axis=0)) * 2, axis=0)
-    df['Test Set'] = group  
-    alignment = np.repeat(['MSMAll', 'CHA'], 3*360, axis=0) # 3 prediction sets
-    df['Alignment'] = alignment  
-    # replace values greater than specific value with median
-    flat = np.array(df['MSE']).flatten()
-    flat.sort()
-    df.loc[df['MSE']>flat[-10],'MSE'] = df['MSE'].median() # remove from 10th largest value
-    
-    pt.RainCloud(x='Test Set', y='MSE', hue='Alignment', data=df, 
-          palette=['#FFD700','#7F00FF'], width_viol=.7, width_box=.25,
-          jitter=1, move=0, orient='h', alpha=.75, dodge=True,
-          scale='area', cut=2, bw=.2, offset=None, ax=ax, # scale='width' or 'area'
-          point_size=1, edgecolor='black', linewidth=1, pointplot=False) 
-        
-    sns.despine(right=True) # removes right and top axis lines (top, bottom, right, left)
-    ax.set_title(var_name[idx[i]], fontsize=12) # title of plot
-    ax.set_xlabel('MSE', fontsize = 12) # xlabel
-    ax.set_ylabel('Test Set', fontsize = 12) # ylabel
-    ax.tick_params(axis='x', labelsize=12)
-    ax.tick_params(axis='y', labelsize=12)
-    ax.get_legend().remove()    
-
-#plt.legend(prop={'size':16}, frameon=False, bbox_to_anchor=(.48, -.06), loc='upper center')
-# Adjust the layout of the plot (so titles and xlabels don't overlap?)
-plt.tight_layout()
-plt.savefig('/Users/Farzad/Desktop/Figures/Raincloud_plott.pdf') 
-plt.show() 
-
-
 
 #%%
 # Barplot: ΔMSE based on cole/anticevic networks
