@@ -1435,12 +1435,8 @@ import string
 
 measure_dir = '/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/coarse/'
 sets = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
+        'REST1_LR_RHA', 'REST1_RL_RHA', 'REST2_LR_RHA', 'REST2_RL_RHA',
         'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
-
-# If having low/high ISC grouping
-group_labels_array = np.array(group_labels)
-high_isc_mask = group_labels_array == "Q4"
-low_isc_mask = group_labels_array == "Q1"
 
 # Dictionary to store all measures
 coarse_measures = {}
@@ -1454,7 +1450,7 @@ for s in sets:
 sns.set_style("white", {'axes.grid':False})
 
 datasetA1, datasetB1, datasetC1, datasetD1, datasetE1, datasetF1 = [], [], [], [], [], []
-for s in sets[0:2]: # MSM (train + test)
+for s in sets[1:4]: # MSM (train + test)
     path_length = coarse_measures[s]['path_length']
     global_clustering = coarse_measures[s]['global_clustering']
     global_efficiency = coarse_measures[s]['global_efficiency']
@@ -1477,7 +1473,7 @@ datasetE1 = np.array(datasetE1).T
 datasetF1 = np.array(datasetF1).T
 
 datasetA2, datasetB2, datasetC2, datasetD2, datasetE2, datasetF2 = [], [], [], [], [], []
-for s in sets[4:6]: # CHA (train + test)
+for s in sets[5:8]: # CHA (train + test)
     path_length = coarse_measures[s]['path_length']
     global_clustering = coarse_measures[s]['global_clustering']
     global_efficiency = coarse_measures[s]['global_efficiency']
@@ -1500,7 +1496,7 @@ datasetE2 = np.array(datasetE2).T
 datasetF2 = np.array(datasetF2).T
 
 datasetA3, datasetB3, datasetC3, datasetD3, datasetE3, datasetF3 = [], [], [], [], [], []
-for s in sets[4:6]: # CHA (train + test)
+for s in sets[9:]: # CHA (train + test)
     path_length = coarse_measures[s]['path_length']
     global_clustering = coarse_measures[s]['global_clustering']
     global_efficiency = coarse_measures[s]['global_efficiency']
@@ -1515,212 +1511,153 @@ for s in sets[4:6]: # CHA (train + test)
     datasetE3.append(modularity)
     datasetF3.append(small_worldness)
 # Convert the lists to NumPy arrays (Use the mask to select a subset of arrays)
-datasetA3 = np.array(datasetA3).T[low_isc_mask]
-datasetB3 = np.array(datasetB3).T[low_isc_mask]
-datasetC3 = np.array(datasetC3).T[low_isc_mask]
-datasetD3 = np.array(datasetD3).T[low_isc_mask]
-datasetE3 = np.array(datasetE3).T[low_isc_mask]
-datasetF3 = np.array(datasetF3).T[low_isc_mask]
+datasetA3 = np.array(datasetA3).T
+datasetB3 = np.array(datasetB3).T
+datasetC3 = np.array(datasetC3).T
+datasetD3 = np.array(datasetD3).T
+datasetE3 = np.array(datasetE3).T
+datasetF3 = np.array(datasetF3).T
 
-datasetA4, datasetB4, datasetC4, datasetD4, datasetE4, datasetF4 = [], [], [], [], [], []
-for s in sets[4:6]: # CHA (train + test)
-    path_length = coarse_measures[s]['path_length']
-    global_clustering = coarse_measures[s]['global_clustering']
-    global_efficiency = coarse_measures[s]['global_efficiency']
-    assortativity = coarse_measures[s]['assortativity']
-    modularity = coarse_measures[s]['modularity']
-    small_worldness = coarse_measures[s]['small_worldness']
-    # defining datasets     
-    datasetA4.append(path_length)
-    datasetB4.append(global_clustering)
-    datasetC4.append(global_efficiency)
-    datasetD4.append(assortativity)
-    datasetE4.append(modularity)
-    datasetF4.append(small_worldness)
-# Convert the lists to NumPy arrays (Use the mask to select a subset of arrays)
-datasetA4 = np.array(datasetA4).T[high_isc_mask]
-datasetB4 = np.array(datasetB4).T[high_isc_mask]
-datasetC4 = np.array(datasetC4).T[high_isc_mask]
-datasetD4 = np.array(datasetD4).T[high_isc_mask]
-datasetE4 = np.array(datasetE4).T[high_isc_mask]
-datasetF4 = np.array(datasetF4).T[high_isc_mask]
-
-ticks = ['Train (REST1_LR)', 'Test (REST1_RL)']
+ticks = ['REST1_RL', 'REST2_LR', 'REST2_RL']
 
 dfA1 = pd.DataFrame(datasetA1, columns=ticks)
 dfA2 = pd.DataFrame(datasetA2, columns=ticks)
 dfA3 = pd.DataFrame(datasetA3, columns=ticks)
-dfA4 = pd.DataFrame(datasetA4, columns=ticks)
 dfB1 = pd.DataFrame(datasetB1, columns=ticks)
 dfB2 = pd.DataFrame(datasetB2, columns=ticks)
 dfB3 = pd.DataFrame(datasetB3, columns=ticks)
-dfB4 = pd.DataFrame(datasetB4, columns=ticks)
 dfC1 = pd.DataFrame(datasetC1, columns=ticks)
 dfC2 = pd.DataFrame(datasetC2, columns=ticks)
 dfC3 = pd.DataFrame(datasetC3, columns=ticks)
-dfC4 = pd.DataFrame(datasetC4, columns=ticks)
 dfD1 = pd.DataFrame(datasetD1, columns=ticks)
 dfD2 = pd.DataFrame(datasetD2, columns=ticks)
 dfD3 = pd.DataFrame(datasetD3, columns=ticks)
-dfD4 = pd.DataFrame(datasetD4, columns=ticks)
 dfE1 = pd.DataFrame(datasetE1, columns=ticks)
 dfE2 = pd.DataFrame(datasetE2, columns=ticks)
 dfE3 = pd.DataFrame(datasetE3, columns=ticks)
-dfE4 = pd.DataFrame(datasetE4, columns=ticks)
 dfF1 = pd.DataFrame(datasetF1, columns=ticks)
 dfF2 = pd.DataFrame(datasetF2, columns=ticks)
 dfF3 = pd.DataFrame(datasetF3, columns=ticks)
-dfF4 = pd.DataFrame(datasetF4, columns=ticks)
 
 names = []
-valsA1, xsA1, valsA2, xsA2, valsA3, xsA3, valsA4, xsA4 = [], [], [], [], [], [], [], []
-valsB1, xsB1, valsB2, xsB2, valsB3, xsB3, valsB4, xsB4 = [], [], [], [], [], [], [], []
-valsC1, xsC1, valsC2, xsC2, valsC3, xsC3, valsC4, xsC4 = [], [], [], [], [], [], [], []
-valsD1, xsD1, valsD2, xsD2, valsD3, xsD3, valsD4, xsD4 = [], [], [], [], [], [], [], []
-valsE1, xsE1, valsE2, xsE2, valsE3, xsE3, valsE4, xsE4 = [], [], [], [], [], [], [], []
-valsF1, xsF1, valsF2, xsF2, valsF3, xsF3, valsF4, xsF4 = [], [], [], [], [], [], [], []
+valsA1, xsA1, valsA2, xsA2, valsA3, xsA3 = [], [], [], [], [], []
+valsB1, xsB1, valsB2, xsB2, valsB3, xsB3 = [], [], [], [], [], []
+valsC1, xsC1, valsC2, xsC2, valsC3, xsC3 = [], [], [], [], [], []
+valsD1, xsD1, valsD2, xsD2, valsD3, xsD3 = [], [], [], [], [], []
+valsE1, xsE1, valsE2, xsE2, valsE3, xsE3 = [], [], [], [], [], []
+valsF1, xsF1, valsF2, xsF2, valsF3, xsF3 = [], [], [], [], [], []
 
 for i, col in enumerate(dfA1.columns):
     valsA1.append(dfA1[col].values)
     valsA2.append(dfA2[col].values)
     valsA3.append(dfA3[col].values)
-    valsA4.append(dfA4[col].values)
     valsB1.append(dfB1[col].values)
     valsB2.append(dfB2[col].values)
     valsB3.append(dfB3[col].values)
-    valsB4.append(dfB4[col].values)
     valsC1.append(dfC1[col].values)
     valsC2.append(dfC2[col].values)
     valsC3.append(dfC3[col].values)
-    valsC4.append(dfC4[col].values)
     valsD1.append(dfD1[col].values)
     valsD2.append(dfD2[col].values)
     valsD3.append(dfD3[col].values)
-    valsD4.append(dfD4[col].values)
     valsE1.append(dfE1[col].values)
     valsE2.append(dfE2[col].values)
     valsE3.append(dfE3[col].values)
-    valsE4.append(dfE4[col].values)
     valsF1.append(dfF1[col].values)
     valsF2.append(dfF2[col].values)
     valsF3.append(dfF3[col].values)
-    valsF4.append(dfF4[col].values)
     names.append(col)
     # Add some random "jitter" to the data points
-    xsA1.append(np.random.normal(i*3-0.75, 0.05, dfA1[col].values.shape[0]))
-    xsA2.append(np.random.normal(i*3-0.25, 0.05, dfA2[col].values.shape[0]))
-    xsA3.append(np.random.normal(i*3+0.25, 0.05, dfA3[col].values.shape[0]))
-    xsA4.append(np.random.normal(i*3+0.75, 0.05, dfA4[col].values.shape[0]))
-    xsB1.append(np.random.normal(i*3-0.75, 0.05, dfB1[col].values.shape[0]))
-    xsB2.append(np.random.normal(i*3-0.25, 0.05, dfB2[col].values.shape[0]))
-    xsB3.append(np.random.normal(i*3+0.25, 0.05, dfB3[col].values.shape[0]))
-    xsB4.append(np.random.normal(i*3+0.75, 0.05, dfB4[col].values.shape[0]))
-    xsC1.append(np.random.normal(i*3-0.75, 0.05, dfC1[col].values.shape[0]))
-    xsC2.append(np.random.normal(i*3-0.25, 0.05, dfC2[col].values.shape[0]))
-    xsC3.append(np.random.normal(i*3+0.25, 0.05, dfC3[col].values.shape[0]))
-    xsC4.append(np.random.normal(i*3+0.75, 0.05, dfC4[col].values.shape[0]))
-    xsD1.append(np.random.normal(i*3-0.75, 0.05, dfD1[col].values.shape[0]))
-    xsD2.append(np.random.normal(i*3-0.25, 0.05, dfD2[col].values.shape[0]))
-    xsD3.append(np.random.normal(i*3+0.25, 0.05, dfD3[col].values.shape[0]))
-    xsD4.append(np.random.normal(i*3+0.75, 0.05, dfD4[col].values.shape[0]))
-    xsE1.append(np.random.normal(i*3-0.75, 0.05, dfE1[col].values.shape[0]))
-    xsE2.append(np.random.normal(i*3-0.25, 0.05, dfE2[col].values.shape[0]))
-    xsE3.append(np.random.normal(i*3+0.25, 0.05, dfE3[col].values.shape[0]))
-    xsE4.append(np.random.normal(i*3+0.75, 0.05, dfE4[col].values.shape[0]))
-    xsF1.append(np.random.normal(i*3-0.75, 0.05, dfF1[col].values.shape[0]))
-    xsF2.append(np.random.normal(i*3-0.25, 0.05, dfF2[col].values.shape[0]))
-    xsF3.append(np.random.normal(i*3+0.25, 0.05, dfF3[col].values.shape[0]))
-    xsF4.append(np.random.normal(i*3+0.75, 0.05, dfF4[col].values.shape[0]))
+    xsA1.append(np.random.normal(i*3-0.7, 0.07, dfA1[col].values.shape[0]))
+    xsA2.append(np.random.normal(i*3-0.0, 0.07, dfA2[col].values.shape[0]))
+    xsA3.append(np.random.normal(i*3+0.7, 0.07, dfA3[col].values.shape[0]))
+    xsB1.append(np.random.normal(i*3-0.7, 0.07, dfB1[col].values.shape[0]))
+    xsB2.append(np.random.normal(i*3-0.0, 0.07, dfB2[col].values.shape[0]))
+    xsB3.append(np.random.normal(i*3+0.7, 0.07, dfB3[col].values.shape[0]))
+    xsC1.append(np.random.normal(i*3-0.7, 0.07, dfC1[col].values.shape[0]))
+    xsC2.append(np.random.normal(i*3-0.0, 0.07, dfC2[col].values.shape[0]))
+    xsC3.append(np.random.normal(i*3+0.7, 0.07, dfC3[col].values.shape[0]))
+    xsD1.append(np.random.normal(i*3-0.7, 0.07, dfD1[col].values.shape[0]))
+    xsD2.append(np.random.normal(i*3-0.0, 0.07, dfD2[col].values.shape[0]))
+    xsD3.append(np.random.normal(i*3+0.7, 0.07, dfD3[col].values.shape[0]))
+    xsE1.append(np.random.normal(i*3-0.7, 0.07, dfE1[col].values.shape[0]))
+    xsE2.append(np.random.normal(i*3-0.0, 0.07, dfE2[col].values.shape[0]))
+    xsE3.append(np.random.normal(i*3+0.7, 0.07, dfE3[col].values.shape[0]))
+    xsF1.append(np.random.normal(i*3-0.7, 0.07, dfF1[col].values.shape[0]))
+    xsF2.append(np.random.normal(i*3-0.0, 0.07, dfF2[col].values.shape[0]))
+    xsF3.append(np.random.normal(i*3+0.7, 0.07, dfF3[col].values.shape[0]))
 
 fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(nrows=2, ncols=3, sharex=False, sharey=False, figsize=(14, 8))
 
-bpA1 = ax1.boxplot(valsA1, labels=names, positions=np.array(range(len(datasetA1[0])))*3-0.75, sym='', widths=.35)
-bpA2 = ax1.boxplot(valsA2, labels=names, positions=np.array(range(len(datasetA2[0])))*3-0.25, sym='', widths=.35)
-bpA3 = ax1.boxplot(valsA3, labels=names, positions=np.array(range(len(datasetA3[0])))*3+0.25, sym='', widths=.35)
-bpA4 = ax1.boxplot(valsA4, labels=names, positions=np.array(range(len(datasetA4[0])))*3+0.75, sym='', widths=.35)
-bpB1 = ax2.boxplot(valsB1, labels=names, positions=np.array(range(len(datasetB1[0])))*3-0.75, sym='', widths=.35)
-bpB2 = ax2.boxplot(valsB2, labels=names, positions=np.array(range(len(datasetB2[0])))*3-0.25, sym='', widths=.35)
-bpB3 = ax2.boxplot(valsB3, labels=names, positions=np.array(range(len(datasetB3[0])))*3+0.25, sym='', widths=.35)
-bpB4 = ax2.boxplot(valsB4, labels=names, positions=np.array(range(len(datasetB4[0])))*3+0.75, sym='', widths=.35)
-bpC1 = ax3.boxplot(valsC1, labels=names, positions=np.array(range(len(datasetC1[0])))*3-0.75, sym='', widths=.35)
-bpC2 = ax3.boxplot(valsC2, labels=names, positions=np.array(range(len(datasetC2[0])))*3-0.25, sym='', widths=.35)
-bpC3 = ax3.boxplot(valsC3, labels=names, positions=np.array(range(len(datasetC3[0])))*3+0.25, sym='', widths=.35)
-bpC4 = ax3.boxplot(valsC4, labels=names, positions=np.array(range(len(datasetC4[0])))*3+0.75, sym='', widths=.35)
-bpD1 = ax4.boxplot(valsD1, labels=names, positions=np.array(range(len(datasetD1[0])))*3-0.75, sym='', widths=.35)
-bpD2 = ax4.boxplot(valsD2, labels=names, positions=np.array(range(len(datasetD2[0])))*3-0.25, sym='', widths=.35)
-bpD3 = ax4.boxplot(valsD3, labels=names, positions=np.array(range(len(datasetD3[0])))*3+0.25, sym='', widths=.35)
-bpD4 = ax4.boxplot(valsD4, labels=names, positions=np.array(range(len(datasetD4[0])))*3+0.75, sym='', widths=.35)
-bpE1 = ax5.boxplot(valsE1, labels=names, positions=np.array(range(len(datasetE1[0])))*3-0.75, sym='', widths=.35)
-bpE2 = ax5.boxplot(valsE2, labels=names, positions=np.array(range(len(datasetE2[0])))*3-0.25, sym='', widths=.35)
-bpE3 = ax5.boxplot(valsE3, labels=names, positions=np.array(range(len(datasetE3[0])))*3+0.25, sym='', widths=.35)
-bpE4 = ax5.boxplot(valsE4, labels=names, positions=np.array(range(len(datasetE4[0])))*3+0.75, sym='', widths=.35)
-bpF1 = ax6.boxplot(valsF1, labels=names, positions=np.array(range(len(datasetF1[0])))*3-0.75, sym='', widths=.35)
-bpF2 = ax6.boxplot(valsF2, labels=names, positions=np.array(range(len(datasetF2[0])))*3-0.25, sym='', widths=.35)
-bpF3 = ax6.boxplot(valsF3, labels=names, positions=np.array(range(len(datasetF3[0])))*3+0.25, sym='', widths=.35)
-bpF4 = ax6.boxplot(valsF4, labels=names, positions=np.array(range(len(datasetF4[0])))*3+0.75, sym='', widths=.35)
+bpA1 = ax1.boxplot(valsA1, labels=names, positions=np.array(range(len(datasetA1[0])))*3-0.7, sym='', widths=.5)
+bpA2 = ax1.boxplot(valsA2, labels=names, positions=np.array(range(len(datasetA2[0])))*3-0.0, sym='', widths=.5)
+bpA3 = ax1.boxplot(valsA3, labels=names, positions=np.array(range(len(datasetA3[0])))*3+0.7, sym='', widths=.5)
+bpB1 = ax2.boxplot(valsB1, labels=names, positions=np.array(range(len(datasetB1[0])))*3-0.7, sym='', widths=.5)
+bpB2 = ax2.boxplot(valsB2, labels=names, positions=np.array(range(len(datasetB2[0])))*3-0.0, sym='', widths=.5)
+bpB3 = ax2.boxplot(valsB3, labels=names, positions=np.array(range(len(datasetB3[0])))*3+0.7, sym='', widths=.5)
+bpC1 = ax3.boxplot(valsC1, labels=names, positions=np.array(range(len(datasetC1[0])))*3-0.7, sym='', widths=.5)
+bpC2 = ax3.boxplot(valsC2, labels=names, positions=np.array(range(len(datasetC2[0])))*3-0.0, sym='', widths=.5)
+bpC3 = ax3.boxplot(valsC3, labels=names, positions=np.array(range(len(datasetC3[0])))*3+0.7, sym='', widths=.5)
+bpD1 = ax4.boxplot(valsD1, labels=names, positions=np.array(range(len(datasetD1[0])))*3-0.7, sym='', widths=.5)
+bpD2 = ax4.boxplot(valsD2, labels=names, positions=np.array(range(len(datasetD2[0])))*3-0.0, sym='', widths=.5)
+bpD3 = ax4.boxplot(valsD3, labels=names, positions=np.array(range(len(datasetD3[0])))*3+0.7, sym='', widths=.5)
+bpE1 = ax5.boxplot(valsE1, labels=names, positions=np.array(range(len(datasetE1[0])))*3-0.7, sym='', widths=.5)
+bpE2 = ax5.boxplot(valsE2, labels=names, positions=np.array(range(len(datasetE2[0])))*3-0.0, sym='', widths=.5)
+bpE3 = ax5.boxplot(valsE3, labels=names, positions=np.array(range(len(datasetE3[0])))*3+0.7, sym='', widths=.5)
+bpF1 = ax6.boxplot(valsF1, labels=names, positions=np.array(range(len(datasetF1[0])))*3-0.7, sym='', widths=.5)
+bpF2 = ax6.boxplot(valsF2, labels=names, positions=np.array(range(len(datasetF2[0])))*3-0.0, sym='', widths=.5)
+bpF3 = ax6.boxplot(valsF3, labels=names, positions=np.array(range(len(datasetF3[0])))*3+0.7, sym='', widths=.5)
 # Optional: change the color of 'boxes', 'whiskers', 'caps', 'medians', and 'fliers'
 plt.setp(bpA1['medians'], linewidth=1, linestyle='-', color='r') # or color='#D7191C' ...
 plt.setp(bpA2['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpA3['medians'], linewidth=1, linestyle='-', color='r')
-plt.setp(bpA4['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpB1['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpB2['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpB3['medians'], linewidth=1, linestyle='-', color='r')
-plt.setp(bpB4['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpC1['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpC2['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpC3['medians'], linewidth=1, linestyle='-', color='r')
-plt.setp(bpC4['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpD1['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpD2['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpD3['medians'], linewidth=1, linestyle='-', color='r')
-plt.setp(bpD4['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpE1['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpE2['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpE3['medians'], linewidth=1, linestyle='-', color='r')
-plt.setp(bpE4['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpF1['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpF2['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpF3['medians'], linewidth=1, linestyle='-', color='r')
-plt.setp(bpF4['medians'], linewidth=1, linestyle='-', color='r')
 
 palette = ['r', 'g', 'b', 'y', 'm', 'c', 'k', 'tan', 'orchid', 'cyan', 'gold', 'crimson']
 
-for xA1, xA2, xA3, xA4, valA1, valA2, valA3, valA4, c in zip(xsA1, xsA2, xsA3, xsA4, valsA1, valsA2, valsA3, valsA4, palette):
+for xA1, xA2, xA3, valA1, valA2, valA3, c in zip(xsA1, xsA2, xsA3, valsA1, valsA2, valsA3, palette):
     ax1.scatter(xA1, valA1, alpha=0.5, color='#FFD700', s=10) # plt.plot(xA1, valA1, 'r.', alpha=0.4)
-    ax1.scatter(xA2, valA2, alpha=0.5, color='#7F00FF', s=10)
-    ax1.scatter(xA3, valA3, alpha=0.5, color='#FF007F', s=10)
-    ax1.scatter(xA4, valA4, alpha=0.5, color='#007FFF', s=10)
+    ax1.scatter(xA2, valA2, alpha=0.4, color='#D2042D', s=10)
+    ax1.scatter(xA3, valA3, alpha=0.5, color='#7F00FF', s=10)
     
-for xB1, xB2, xB3, xB4, valB1, valB2, valB3, valB4, c in zip(xsB1, xsB2, xsB3, xsB4, valsB1, valsB2, valsB3, valsB4, palette):
+for xB1, xB2, xB3, valB1, valB2, valB3, c in zip(xsB1, xsB2, xsB3, valsB1, valsB2, valsB3, palette):
     ax2.scatter(xB1, valB1, alpha=0.5, color='#FFD700', s=10)
-    ax2.scatter(xB2, valB2, alpha=0.5, color='#7F00FF', s=10)   
-    ax2.scatter(xB3, valB3, alpha=0.5, color='#FF007F', s=10)
-    ax2.scatter(xB4, valB4, alpha=0.5, color='#007FFF', s=10) 
+    ax2.scatter(xB2, valB2, alpha=0.4, color='#D2042D', s=10)   
+    ax2.scatter(xB3, valB3, alpha=0.5, color='#7F00FF', s=10)
     
-for xC1, xC2, xC3, xC4, valC1, valC2, valC3, valC4, c in zip(xsC1, xsC2, xsC3, xsC4, valsC1, valsC2, valsC3, valsC4, palette):
+for xC1, xC2, xC3, valC1, valC2, valC3, c in zip(xsC1, xsC2, xsC3, valsC1, valsC2, valsC3, palette):
     ax3.scatter(xC1, valC1, alpha=0.5, color='#FFD700', s=10)
-    ax3.scatter(xC2, valC2, alpha=0.5, color='#7F00FF', s=10) 
-    ax3.scatter(xC3, valC3, alpha=0.5, color='#FF007F', s=10)
-    ax3.scatter(xC4, valC4, alpha=0.5, color='#007FFF', s=10) 
+    ax3.scatter(xC2, valC2, alpha=0.4, color='#D2042D', s=10) 
+    ax3.scatter(xC3, valC3, alpha=0.5, color='#7F00FF', s=10)
     
-for xD1, xD2, xD3, xD4, valD1, valD2, valD3, valD4, c in zip(xsD1, xsD2, xsD3, xsD4, valsD1, valsD2, valsD3, valsD4, palette):
+for xD1, xD2, xD3, valD1, valD2, valD3, c in zip(xsD1, xsD2, xsD3, valsD1, valsD2, valsD3, palette):
     ax4.scatter(xD1, valD1, alpha=0.5, color='#FFD700', s=10)
-    ax4.scatter(xD2, valD2, alpha=0.5, color='#7F00FF', s=10) 
-    ax4.scatter(xD3, valD3, alpha=0.5, color='#FF007F', s=10)
-    ax4.scatter(xD4, valD4, alpha=0.5, color='#007FFF', s=10)    
+    ax4.scatter(xD2, valD2, alpha=0.4, color='#D2042D', s=10) 
+    ax4.scatter(xD3, valD3, alpha=0.5, color='#7F00FF', s=10)
 
-for xE1, xE2, xE3, xE4, valE1, valE2, valE3, valE4, c in zip(xsE1, xsE2, xsE3, xsE4, valsE1, valsE2, valsE3, valsE4, palette):
+for xE1, xE2, xE3, valE1, valE2, valE3, c in zip(xsE1, xsE2, xsE3, valsE1, valsE2, valsE3, palette):
     ax5.scatter(xE1, valE1, alpha=0.5, color='#FFD700', s=10)
-    ax5.scatter(xE2, valE2, alpha=0.5, color='#7F00FF', s=10) 
-    ax5.scatter(xE3, valE3, alpha=0.5, color='#FF007F', s=10)
-    ax5.scatter(xE4, valE4, alpha=0.5, color='#007FFF', s=10)
+    ax5.scatter(xE2, valE2, alpha=0.4, color='#D2042D', s=10) 
+    ax5.scatter(xE3, valE3, alpha=0.5, color='#7F00FF', s=10)
     
-for xF1, xF2, xF3, xF4, valF1, valF2, valF3, valF4, c in zip(xsF1, xsF2, xsF3, xsF4, valsF1, valsF2, valsF3, valsF4, palette):
+for xF1, xF2, xF3, valF1, valF2, valF3, c in zip(xsF1, xsF2, xsF3, valsF1, valsF2, valsF3, palette):
     ax6.scatter(xF1, valF1, alpha=0.5, color='#FFD700', s=10)
-    ax6.scatter(xF2, valF2, alpha=0.5, color='#7F00FF', s=10)
-    ax6.scatter(xF3, valF3, alpha=0.5, color='#FF007F', s=10)
-    ax6.scatter(xF4, valF4, alpha=0.5, color='#007FFF', s=10)      
+    ax6.scatter(xF2, valF2, alpha=0.4, color='#D2042D', s=10)
+    ax6.scatter(xF3, valF3, alpha=0.5, color='#7F00FF', s=10)
 
 # Use the pyplot interface to customize any subplot...
 # First subplot
@@ -1732,9 +1669,8 @@ plt.xlim(-1.5, len(ticks)*3-1.5)
 plt.ylabel("Path Length", fontweight='normal', fontsize=14)
 #plt.xlabel("Test Sets", fontweight='normal', fontsize=16)
 plt.plot([], c='#FFD700', label='MSM', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
+plt.plot([], c='#D2042D', label='RHA', marker='o', linestyle='None', markersize=8)
 plt.plot([], c='#7F00FF', label='CHA', marker='o', linestyle='None', markersize=8)
-plt.plot([], c='#FF007F', label='CHA-Q1', marker='o', linestyle='None', markersize=8)
-plt.plot([], c='#007FFF', label='CHA-Q4', marker='o', linestyle='None', markersize=8)
 # # Statistical annotation
 # xs1 = np.array([]) # [-0.5, 2.5, 5.5]
 # xs2 = np.array([]) # [0.5, 3.5, 6.5]
@@ -1751,9 +1687,8 @@ plt.xlim(-1.5, len(ticks)*3-1.5)
 plt.ylabel("Clustering Coefficient", fontweight='normal', fontsize=14)
 #plt.xlabel("Test Sets", fontweight='normal', fontsize=16)
 plt.plot([], c='#FFD700', label='MSM', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
+plt.plot([], c='#D2042D', label='RHA', marker='o', linestyle='None', markersize=8)
 plt.plot([], c='#7F00FF', label='CHA', marker='o', linestyle='None', markersize=8)
-plt.plot([], c='#FF007F', label='CHA-Q1', marker='o', linestyle='None', markersize=8)
-plt.plot([], c='#007FFF', label='CHA-Q4', marker='o', linestyle='None', markersize=8)
 # # Statistical annotation
 # xs1 = np.array([-0.5, 2.5, 5.5])
 # xs2 = np.array([0.5, 3.5, 6.5])
@@ -1767,12 +1702,12 @@ plt.plot([], c='#007FFF', label='CHA-Q4', marker='o', linestyle='None', markersi
 plt.sca(ax3)
 plt.xticks(range(0, len(ticks) * 3, 3), ticks, fontsize=12)
 plt.xlim(-1.5, len(ticks)*3-1.5)
+plt.ylim(top=.68)
 plt.ylabel("Global Efficiency", fontweight='normal', fontsize=14)
 #plt.xlabel("Test Sets", fontweight='normal', fontsize=16)
 plt.plot([], c='#FFD700', label='MSM', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
+plt.plot([], c='#D2042D', label='RHA', marker='o', linestyle='None', markersize=8)
 plt.plot([], c='#7F00FF', label='CHA', marker='o', linestyle='None', markersize=8)
-plt.plot([], c='#FF007F', label='CHA-Q1', marker='o', linestyle='None', markersize=8)
-plt.plot([], c='#007FFF', label='CHA-Q4', marker='o', linestyle='None', markersize=8)
 # # Statistical annotation
 # xs1 = np.array([-0.5, 2.5, 5.5])
 # xs2 = np.array([0.5, 3.5, 6.5])
@@ -1789,9 +1724,8 @@ plt.xlim(-1.5, len(ticks)*3-1.5)
 plt.ylabel("Assortativity", fontweight='normal', fontsize=14)
 #plt.xlabel("Test Sets", fontweight='normal', fontsize=16)
 plt.plot([], c='#FFD700', label='MSM', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
+plt.plot([], c='#D2042D', label='RHA', marker='o', linestyle='None', markersize=8)
 plt.plot([], c='#7F00FF', label='CHA', marker='o', linestyle='None', markersize=8)
-plt.plot([], c='#FF007F', label='CHA-Q1', marker='o', linestyle='None', markersize=8)
-plt.plot([], c='#007FFF', label='CHA-Q4', marker='o', linestyle='None', markersize=8)
 # # Statistical annotation
 # xs1 = np.array([-0.5, 2.5, 5.5])
 # xs2 = np.array([0.5, 3.5, 6.5])
@@ -1808,9 +1742,8 @@ plt.xlim(-1.5, len(ticks)*3-1.5)
 plt.ylabel("Modularity (single-layer)", fontweight='normal', fontsize=14)
 #plt.xlabel("Test Sets", fontweight='normal', fontsize=16)
 plt.plot([], c='#FFD700', label='MSM', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
+plt.plot([], c='#D2042D', label='RHA', marker='o', linestyle='None', markersize=8)
 plt.plot([], c='#7F00FF', label='CHA', marker='o', linestyle='None', markersize=8)
-plt.plot([], c='#FF007F', label='CHA-Q1', marker='o', linestyle='None', markersize=8)
-plt.plot([], c='#007FFF', label='CHA-Q4', marker='o', linestyle='None', markersize=8)
 # # Statistical annotation
 # xs1 = np.array([])
 # xs2 = np.array([])
@@ -1824,12 +1757,12 @@ plt.plot([], c='#007FFF', label='CHA-Q4', marker='o', linestyle='None', markersi
 plt.sca(ax6)
 plt.xticks(range(0, len(ticks) * 3, 3), ticks, fontsize=12)
 plt.xlim(-1.5, len(ticks)*3-1.5)
+plt.ylim(top=3.3)
 plt.ylabel("Small-worldness", fontweight='normal', fontsize=14)
 #plt.xlabel("Test Sets", fontweight='normal', fontsize=16)
 plt.plot([], c='#FFD700', label='MSM', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
-plt.plot([], c='#7F00FF', label='CHA-All', marker='o', linestyle='None', markersize=8)
-plt.plot([], c='#FF007F', label='CHA-Q1', marker='o', linestyle='None', markersize=8)
-plt.plot([], c='#007FFF', label='CHA-Q4', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#D2042D', label='RHA', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#7F00FF', label='CHA', marker='o', linestyle='None', markersize=8)
 # # Statistical annotation
 # xs1 = np.array([-0.5, 2.5, 5.5])
 # xs2 = np.array([0.5, 3.5, 6.5])
@@ -1856,11 +1789,11 @@ plt.savefig('/Users/Farzad/Desktop/Figures/Revision/Fig4_Global_Boxplot_test.pdf
 plt.show() 
 
 # =============================================================================
-# # Perform t-test
-# from scipy.stats import ttest_ind
+# # # Perform t-test
+# # from scipy.stats import ttest_ind
 # 
-# t_statistic, p_value = ttest_ind(datasetF1[:,3], datasetF2[:,3])
-# print(p_value)
+# # t_statistic, p_value = ttest_ind(datasetF2[:,1], datasetF3[:,1])
+# # print(p_value)
 # =============================================================================
 
 #%% shaded ERROR BAR (local measures, coarse scale)
@@ -1882,30 +1815,34 @@ for roi in range(1,n_roi+1): # whole brain: range(1,361)
 # create sorted index    
 index_sorted = index.argsort(kind='stable')
 
-mean_A1 = np.mean(np.array(coarse_measures[sets[2]]['degree'])[:,index_sorted], axis=0)
-std_A1 = np.std(np.array(coarse_measures[sets[2]]['degree'])[:,index_sorted], axis=0)
-mean_A2 = np.mean(np.array(coarse_measures[sets[6]]['degree'])[:,index_sorted], axis=0)
-std_A2 = np.std(np.array(coarse_measures[sets[6]]['degree'])[:,index_sorted], axis=0)
+sets = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
+        'REST1_LR_RHA', 'REST1_RL_RHA', 'REST2_LR_RHA', 'REST2_RL_RHA',
+        'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
 
-mean_B1 = np.mean(np.array(coarse_measures[sets[2]]['eigenvector_centrality'])[:,index_sorted], axis=0)
-std_B1 = np.std(np.array(coarse_measures[sets[2]]['eigenvector_centrality'])[:,index_sorted], axis=0)
-mean_B2 = np.mean(np.array(coarse_measures[sets[6]]['eigenvector_centrality'])[:,index_sorted], axis=0)
-std_B2 = np.std(np.array(coarse_measures[sets[6]]['eigenvector_centrality'])[:,index_sorted], axis=0)
+mean_A1 = np.mean(np.array(coarse_measures[sets[6]]['degree'])[:,index_sorted], axis=0)
+std_A1 = np.std(np.array(coarse_measures[sets[6]]['degree'])[:,index_sorted], axis=0)
+mean_A2 = np.mean(np.array(coarse_measures[sets[10]]['degree'])[:,index_sorted], axis=0)
+std_A2 = np.std(np.array(coarse_measures[sets[10]]['degree'])[:,index_sorted], axis=0)
 
-mean_C1 = np.mean(np.array(coarse_measures[sets[2]]['closeness_centrality'])[:,index_sorted], axis=0)
-std_C1 = np.std(np.array(coarse_measures[sets[2]]['closeness_centrality'])[:,index_sorted], axis=0)
-mean_C2 = np.mean(np.array(coarse_measures[sets[6]]['closeness_centrality'])[:,index_sorted], axis=0)
-std_C2 = np.std(np.array(coarse_measures[sets[6]]['closeness_centrality'])[:,index_sorted], axis=0)
+mean_B1 = np.mean(np.array(coarse_measures[sets[6]]['eigenvector_centrality'])[:,index_sorted], axis=0)
+std_B1 = np.std(np.array(coarse_measures[sets[6]]['eigenvector_centrality'])[:,index_sorted], axis=0)
+mean_B2 = np.mean(np.array(coarse_measures[sets[10]]['eigenvector_centrality'])[:,index_sorted], axis=0)
+std_B2 = np.std(np.array(coarse_measures[sets[10]]['eigenvector_centrality'])[:,index_sorted], axis=0)
 
-mean_D1 = np.mean(np.array(coarse_measures[sets[2]]['local_clustering'])[:,index_sorted], axis=0)
-std_D1 = np.std(np.array(coarse_measures[sets[2]]['local_clustering'])[:,index_sorted], axis=0)
-mean_D2 = np.mean(np.array(coarse_measures[sets[6]]['local_clustering'])[:,index_sorted], axis=0)
-std_D2 = np.std(np.array(coarse_measures[sets[6]]['local_clustering'])[:,index_sorted], axis=0)
+mean_C1 = np.mean(np.array(coarse_measures[sets[6]]['closeness_centrality'])[:,index_sorted], axis=0)
+std_C1 = np.std(np.array(coarse_measures[sets[6]]['closeness_centrality'])[:,index_sorted], axis=0)
+mean_C2 = np.mean(np.array(coarse_measures[sets[10]]['closeness_centrality'])[:,index_sorted], axis=0)
+std_C2 = np.std(np.array(coarse_measures[sets[10]]['closeness_centrality'])[:,index_sorted], axis=0)
 
-mean_E1 = np.mean(np.array(coarse_measures[sets[2]]['k_coreness'])[:,index_sorted], axis=0)
-std_E1 = np.std(np.array(coarse_measures[sets[2]]['k_coreness'])[:,index_sorted], axis=0)
-mean_E2 = np.mean(np.array(coarse_measures[sets[6]]['k_coreness'])[:,index_sorted], axis=0)
-std_E2 = np.std(np.array(coarse_measures[sets[6]]['k_coreness'])[:,index_sorted], axis=0)
+mean_D1 = np.mean(np.array(coarse_measures[sets[6]]['local_clustering'])[:,index_sorted], axis=0)
+std_D1 = np.std(np.array(coarse_measures[sets[6]]['local_clustering'])[:,index_sorted], axis=0)
+mean_D2 = np.mean(np.array(coarse_measures[sets[10]]['local_clustering'])[:,index_sorted], axis=0)
+std_D2 = np.std(np.array(coarse_measures[sets[10]]['local_clustering'])[:,index_sorted], axis=0)
+
+mean_E1 = np.mean(np.array(coarse_measures[sets[6]]['k_coreness'])[:,index_sorted], axis=0)
+std_E1 = np.std(np.array(coarse_measures[sets[6]]['k_coreness'])[:,index_sorted], axis=0)
+mean_E2 = np.mean(np.array(coarse_measures[sets[10]]['k_coreness'])[:,index_sorted], axis=0)
+std_E2 = np.std(np.array(coarse_measures[sets[10]]['k_coreness'])[:,index_sorted], axis=0)
 
 x = np.arange(len(mean_A1))
 
@@ -2053,7 +1990,7 @@ sns.despine(right=True) # removes right and top axis lines (top, bottom, right, 
 
 # Adjust the layout of the plot
 plt.tight_layout()
-plt.savefig('/Users/Farzad/Desktop/Figures/ShadedErrorbar.pdf',
+plt.savefig('/Users/Farzad/Desktop/Figures/ShadedErrorbar_test.pdf',
             bbox_inches='tight', pad_inches=0, format='pdf', dpi=300) 
 plt.show()
 
@@ -2095,8 +2032,12 @@ behav_data = demo.loc[subjects[:n_subjects]]
 behav_data.fillna(behav_data.mean(), inplace=True)
 
 sets = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
+        'REST1_LR_RHA', 'REST1_RL_RHA', 'REST2_LR_RHA', 'REST2_RL_RHA',
         'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
-pred_set = np.array([[0, 1, 'MSM: REST1_RL'], [0, 2, 'MSM: REST2_LR'], [0, 3, 'MSM: REST2_RL'], [4, 5, 'CHA: REST1_RL'], [4, 6, 'CHA: REST2_LR'], [4, 7, 'CHA: REST2_RL']])
+
+pred_set = np.array([[0, 1, 'MSM: REST1_RL'], [0, 2, 'MSM: REST2_LR'], [0, 3, 'MSM: REST2_RL'], 
+                     [4, 5, 'RHA: REST1_RL'], [4, 6, 'RHA: REST2_LR'], [4, 7, 'RHA: REST2_RL'],
+                     [8, 9, 'CHA: REST1_RL'], [8, 10, 'CHA: REST2_LR'], [8, 11, 'CHA: REST2_RL']])
 
 measures = ['degree', 'eigenvector_centrality', 'closeness_centrality', 'local_clustering', 'k_coreness'] # 'pagerank_centrality',
 
@@ -2121,7 +2062,7 @@ import pandas as pd
 
 # Set style and color palette
 sns.set(style="whitegrid")
-palette = ['#FFD700', '#7F00FF']
+palette = ['#FFD700', '#D2042D', '#7F00FF']
 
 # Create a new DataFrame with four columns
 data = []
@@ -2200,10 +2141,6 @@ def train_and_evaluate_model(X_train, y_train, X_test, y_test):
 subjects = ['100206', '100307', '100408', '100610', '101006', '101107', '101309', '101915', '102008', '102311', '102513', '102816', '103111', '103414', '103515', '103818', '104012', '104416', '105014', '105115', '105216', '105620', '105923', '106016', '106319', '106521', '107018', '107321', '107422', '107725', '108121', '108222', '108323', '108525', '108828', '109123', '109325', '109830', '110007', '110411', '110613', '111009', '111312', '111413', '111716', '112112', '112314', '112516', '112920', '113215', '113619', '113922', '114217', '114318', '114419', '114621', '114823', '114924', '115017', '115219', '115320', '115825', '116524', '116726', '117122', '117324', '117930', '118124', '118528', '118730', '118932', '119126', '120212', '120515', '120717', '121416', '121618', '121921', '122317', '122620', '122822', '123117', '123420', '123521', '123824', '123925', '124220', '124422', '124624', '124826', '125525', '126325', '126628', '127327', '127630', '127933', '128026', '128127', '128632', '128935', '129028', '129129', '129331', '129634', '130013', '130316', '130417', '130619', '130821', '130922', '131217', '131419', '131722', '131823', '131924', '132017', '132118', '133019', '133827', '133928', '134021', '134223', '134324', '134425', '134728', '134829', '135225', '135528', '135730', '135932', '136227', '136732', '136833', '137027', '137128', '137229', '137633', '137936', '138231', '138534', '138837', '139233', '139637', '139839', '140319', '140824', '140925', '141119', '141826', '142828', '143426', '144125', '144428', '144832', '145127', '146129', '146331', '146432', '146533', '146937', '147030', '147737', '148032', '148133', '148335', '148840', '148941', '149236', '149337', '149539', '149741', '149842', '150625', '150726', '150928', '151223', '151425', '151526', '151627', '151728', '151829', '152831', '153025', '153227', '153429', '153631', '153833', '154229', '179245', '179346', '180129', '180432', '180735', '180836', '180937', '181131', '181232', '181636', '182032', '182436', '182739', '182840', '183034', '185139', '185341', '185442', '185846', '185947', '186141', '186444', '187143', '187547', '187850', '188347', '188448', '188751', '189349', '189450', '190031', '191033', '191336', '191437', '191942', '192035', '192136', '192540', '192641', '192843', '193239', '194140', '194645', '194746', '194847', '195041', '195647', '195849', '195950', '196144', '196346', '196750', '197348', '197550', '198249', '198350', '198451', '198653', '198855', '199150', '199251', '199453', '199655', '199958', '200008', '200614', '200917', '201111', '201414', '201818', '202113', '202719', '203418', '204016', '204319', '204420', '204622', '205725', '206222', '207123', '208024', '208125', '208226', '208327', '209127', '209228', '209329']
 n_subjects = 200
 n_rois = 360 # 360
-group_labels = ['Q1', 'Q3', 'Q2', 'Q4', 'Q3', 'Q1', 'Q2', 'Q4', 'Q2', 'Q1', 'Q2', 'Q2', 'Q4', 'Q2', 'Q2', 'Q2', 'Q4', 'Q3', 'Q2', 'Q2', 'Q2', 'Q4', 'Q1', 'Q4', 'Q1', 'Q4', 'Q1', 'Q3', 'Q2', 'Q2', 'Q2', 'Q4', 'Q2', 'Q1', 'Q1', 'Q1', 'Q4', 'Q2', 'Q3', 'Q1', 'Q1', 'Q3', 'Q3', 'Q3', 'Q3', 'Q2', 'Q4', 'Q3', 'Q1', 'Q1', 'Q4', 'Q1', 'Q2', 'Q2', 'Q3', 'Q2', 'Q4', 'Q1', 'Q3', 'Q3', 'Q4', 'Q1', 'Q1', 'Q4', 'Q1', 'Q2', 'Q4', 'Q4', 'Q3', 'Q4', 'Q3', 'Q2', 'Q1', 'Q1', 'Q2', 'Q1', 'Q4', 'Q1', 'Q4', 'Q3', 'Q4', 'Q3', 'Q2', 'Q3', 'Q2', 'Q1', 'Q4', 'Q2', 'Q1', 'Q3', 'Q3', 'Q1', 'Q1', 'Q2', 'Q2', 'Q3', 'Q2', 'Q1', 'Q1', 'Q4', 'Q3', 'Q4', 'Q1', 'Q1', 'Q4', 'Q2', 'Q2', 'Q2', 'Q1', 'Q4', 'Q3', 'Q3', 'Q4', 'Q2', 'Q3', 'Q2', 'Q3', 'Q1', 'Q1', 'Q2', 'Q2', 'Q2', 'Q3', 'Q3', 'Q2', 'Q1', 'Q2', 'Q3', 'Q3', 'Q1', 'Q4', 'Q3', 'Q3', 'Q2', 'Q2', 'Q4', 'Q4', 'Q1', 'Q4', 'Q1', 'Q1', 'Q3', 'Q1', 'Q4', 'Q4', 'Q3', 'Q1', 'Q2', 'Q1', 'Q1', 'Q4', 'Q1', 'Q1', 'Q4', 'Q3', 'Q2', 'Q1', 'Q2', 'Q4', 'Q4', 'Q3', 'Q3', 'Q2', 'Q4', 'Q4', 'Q3', 'Q4', 'Q4', 'Q3', 'Q4', 'Q3', 'Q4', 'Q3', 'Q3', 'Q2', 'Q2', 'Q4', 'Q1', 'Q3', 'Q4', 'Q3', 'Q1', 'Q2', 'Q4', 'Q4', 'Q3', 'Q3', 'Q3', 'Q1', 'Q3', 'Q3', 'Q3', 'Q2', 'Q2', 'Q4', 'Q4', 'Q4', 'Q1', 'Q1', 'Q4']
-#indices = [i for i in range(len(group_labels)) if group_labels[i] == 'Q3']
-indices = [i for i in range(len(group_labels)) if group_labels[i] == 'Q3' or group_labels[i] == 'Q4']
-
 
 behav = 'Fluid_intelligence' # Age_in_Yrs, BMI, Gender, DepressionScore, Fluid_intelligence
 demo = pd.read_excel('/Volumes/Elements/HCP_Motion/DemoData.xlsx', index_col='Subject')
@@ -2212,8 +2149,12 @@ behav_data = demo.loc[subjects[:n_subjects]]
 behav_data.fillna(behav_data.mean(), inplace=True)
 
 sets = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
+        'REST1_LR_RHA', 'REST1_RL_RHA', 'REST2_LR_RHA', 'REST2_RL_RHA',
         'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
-pred_set = np.array([[0, 1, 'MSM: REST1_RL'], [0, 2, 'MSM: REST2_LR'], [0, 3, 'MSM: REST2_RL'], [4, 5, 'CHA: REST1_RL'], [4, 6, 'CHA: REST2_LR'], [4, 7, 'CHA: REST2_RL']])
+
+pred_set = np.array([[0, 1, 'MSM: REST1_RL'], [0, 2, 'MSM: REST2_LR'], [0, 3, 'MSM: REST2_RL'], 
+                     [4, 5, 'RHA: REST1_RL'], [4, 6, 'RHA: REST2_LR'], [4, 7, 'RHA: REST2_RL'],
+                     [8, 9, 'CHA: REST1_RL'], [8, 10, 'CHA: REST2_LR'], [8, 11, 'CHA: REST2_RL']])
 
 measures = ['degree', 'eigenvector_centrality', 'closeness_centrality', 'pagerank_centrality', 'local_clustering', 'k_coreness']
 
@@ -2229,16 +2170,14 @@ for measure in measures:
         for s in range(len(pred_set)):
             # Training/testing sets and target variable
             X_train, y_train = load_graph_measures('/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/fine/graph_measures_roi' + str(roi) + '_' + sets[int(pred_set[s][0])] + '.pickle', measure, subjects[:n_subjects]), behav_data[behav]
-            X_train, y_train = X_train.iloc[indices], y_train.iloc[indices]
             X_test, y_test = load_graph_measures('/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/fine/graph_measures_roi' + str(roi) + '_' + sets[int(pred_set[s][1])] + '.pickle', measure, subjects[:n_subjects]), behav_data[behav]
-            X_test, y_test = X_test.iloc[indices], y_test.iloc[indices]
             # Train and evaluate model
             mse, r2 = train_and_evaluate_model(X_train, y_train, X_test, y_test)
             mse_values[s] = mse
             r2_values[s] = r2
         mse_df.loc[roi] = mse_values
         r2_df.loc[roi] = r2_values
-        #print(roi)
+        print(roi)
     print(measure)
     results_mse[measure] = mse_df
     results_r2[measure] = r2_df
@@ -2268,8 +2207,8 @@ import ptitprince as pt # pip install ptitprince
 
 # Load results from the saved file
 output_dir = '/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/'
-filepath_mse = os.path.join(output_dir, 'results_mse_h2.pickle')
-filepath_r2 = os.path.join(output_dir, 'results_r2_h2.pickle')
+filepath_mse = os.path.join(output_dir, 'results_mse.pickle')
+filepath_r2 = os.path.join(output_dir, 'results_r2.pickle')
 with open(filepath_mse, 'rb') as f:
     results_mse = pickle.load(f)
 with open(filepath_r2, 'rb') as f:
@@ -2294,7 +2233,7 @@ for i, ax in enumerate(axes.flatten()):
         # Replace outliers with the median value
         median = mse_values.median()
         # Set a threshold as a multiple of the interquartile range (IQR)
-        if i == 0 or i == len(df.columns) - 1:
+        if i == 0 or i == 5: # len(df.columns) - 1
             threshold = 250  # Specific threshold for the first and last subplots
             mse_values = np.where(np.abs(mse_values - median) > threshold, threshold, mse_values)
         else:
@@ -2305,7 +2244,7 @@ for i, ax in enumerate(axes.flatten()):
         new_df = pd.concat([new_df, temp_df], ignore_index=True)
     
     pt.RainCloud(x='Test', y='MSE', hue='Alignment', data=new_df, 
-          palette=['#FFD700','#7F00FF'], width_viol=.7, width_box=.25,
+          palette=['#FFD700', '#D2042D', '#7F00FF'], width_viol=.7, width_box=.25,
           jitter=1, move=0, orient='h', alpha=.75, dodge=True,
           scale='area', cut=2, bw=.2, offset=None, ax=ax,
           point_size=2, edgecolor='black', linewidth=1, pointplot=False) 
@@ -2322,7 +2261,7 @@ for i, ax in enumerate(axes.flatten()):
 # plt.legend(prop={'size': 12}, frameon=False, bbox_to_anchor=(0.5, -0.2), loc='upper center')
 
 plt.tight_layout()
-#plt.savefig('/Users/Farzad/Desktop/Figures/Raincloud_plot.pdf') 
+plt.savefig('/Users/Farzad/Desktop/Figures/Raincloud_plot.pdf') 
 plt.show()
 
 #%% Radar chart for MSEs across networks --> env pytorch
@@ -2349,16 +2288,18 @@ for roi in range(1,361):
 # =============================================================================
 
 # Create an empty dictionary to store the mean values for each group
-data = {'MSM': [], 'CHA': []}
+data = {'MSM': [], 'RHA': [], 'CHA': []}
 
 # Iterate over the file indices from 1 to 17
 for net in range(1, 18):
 
     mean_msm = results_mse[measure].loc[index==net, ['MSM: REST1_RL', 'MSM: REST2_LR', 'MSM: REST2_RL']].mean()
+    mean_rha = results_mse[measure].loc[index==net, ['RHA: REST1_RL', 'RHA: REST2_LR', 'RHA: REST2_RL']].mean()
     mean_cha = results_mse[measure].loc[index==net, ['CHA: REST1_RL', 'CHA: REST2_LR', 'CHA: REST2_RL']].mean()
     
     # Calculate the mean for each group and append to the corresponding list
     data['MSM'].append(mean_msm.mean())
+    data['RHA'].append(mean_rha.mean())
     data['CHA'].append(mean_cha.mean())
 
 # Create the DataFrame from the dictionary
@@ -2397,7 +2338,7 @@ elif measure == 'eigenvector_centrality':
     yticks = [23,23.3,23.6,23.9,24.2]
     yticks_string = [str(ytick) for ytick in yticks]
     plt.yticks(yticks, yticks_string, color="grey", size=7)
-    plt.ylim(22.8,24.5)  
+    plt.ylim(22.5,24.4)  
 elif measure == 'closeness_centrality':
     label = 'Closeness Centrality'
     ax.set_rlabel_position(0)
@@ -2428,7 +2369,15 @@ ax.fill(angles, values, color_msm, alpha=0.15)
 # ax.spines['polar'].set_linewidth(3)  # Adjust the linewidth as needed
 # =============================================================================
 
-# Group 2: CHA
+# Group 2: RHA
+values = df.loc['RHA'].values.flatten().tolist()
+values += values[:1]
+color_rha = '#D2042D'  # Existing color for RHA
+dark_color_rha = '#A00323'  # Darker shade for RHA
+ax.plot(angles, values, linewidth=1, linestyle='solid', label="RHA", color=dark_color_rha)
+ax.fill(angles, values, color_rha, alpha=0.15)
+
+# Group 3: CHA
 values = df.loc['CHA'].values.flatten().tolist()
 values += values[:1]
 color_cha = '#7F00FF'  # Existing color for CHA
@@ -4044,6 +3993,27 @@ subjects = ['100206', '100307', '100408', '100610', '101006', '101107', '101309'
 n_subjects = 200
 
 net_idx = np.where(hcp.yeo17.map_all[:59412] == net)[0]
+
+#%%
+values = []
+
+for i in range(1, 13):
+    value = len(np.where(hcp.ca_network.map_all[:59412] == i)[0])
+    values.append(value)
+    print(value)
+
+min_value = min(values)
+max_value = max(values)
+mean_value = sum(values) / len(values)
+std_value = np.std(values)
+
+print("Min:", min_value)
+print("Max:", max_value)
+print("Mean:", mean_value)
+print("Std:", std_value)
+
+
+#%%
 
 for session in sessions:
         
