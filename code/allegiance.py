@@ -8,8 +8,8 @@ import hcp_utils as hcp
 # https://teneto.readthedocs.io/en/latest/tutorial/networkmeasures.html
 from teneto import communitymeasures
 
-#idx = int(os.getenv("SGE_TASK_ID"))
-idx = 1
+idx = int(os.getenv("SLURM_ARRAY_TASK_ID"))
+#idx = 1
 
 atlas = hcp.yeo17 # {‘mmp’, ‘ca_parcels’, ‘ca_network’, ‘yeo7’, ‘yeo17’}
 #path = '/Volumes/Elements/Hyperalignment/HCP/200sbj/modularity/matlab_output/'
@@ -20,7 +20,7 @@ for net in range(idx,idx+1):
     
     # import community assignment of sessions
     communities = sio.loadmat(f'{path}S_net{net}.mat', squeeze_me=True)['S']
-
+    
     num_set = communities.shape[0]
     
     # create static communities (networks' labels)
@@ -36,7 +36,7 @@ for net in range(idx,idx+1):
         #promiscuity.append(communitymeasures.promiscuity(communities[s])) # 0 entails only 1 community. 1 entails all communities
     
     print("Network: {} --> Length: {}".format(net, len(roi_idx)))
-
+    
     #os.chdir('/Volumes/Elements/Hyperalignment/HCP/200sbj/modularity/allegiance/')
     os.chdir('/dcs05/ciprian/smart/farahani/SL-CHA/modularity/allegiance/')
     
