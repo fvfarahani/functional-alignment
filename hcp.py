@@ -3,6 +3,8 @@
 #!pip install git+https://github.com/FIU-Neuro/brainconn#egg=brainconn
 #!pip install netneurotools tqdm
 
+# dcs07/smart/data
+
 #%matplotlib inline
 import nibabel as nib
 import nilearn.plotting as plotting
@@ -428,10 +430,10 @@ for i, subj in enumerate(subjects[:n_sbj]): # subjects[idx:idx+1]:
 # saving connectivity profiles
 os.chdir('/dcs05/ciprian/smart/farahani/SL-CHA/connectomes/') # '/dcl01/smart/data/fvfarahani/searchlight/connectivity_profiles/'
 
-np.save('cp_rest1LR_200sbj', cp_rest1LR)  
-np.save('cp_rest1RL_200sbj', cp_rest1RL) 
-np.save('cp_rest2LR_200sbj', cp_rest2LR) 
-np.save('cp_rest2RL_200sbj', cp_rest2RL) 
+np.save('cp_REST1_LR_200sbj', cp_rest1LR)  
+np.save('cp_REST1_RL_200sbj', cp_rest1RL) 
+np.save('cp_REST2_LR_200sbj', cp_rest2LR) 
+np.save('cp_REST2_RL_200sbj', cp_rest2RL) 
 
 #%% Prepare CP for PyMVPA (Left or Right?): fMRI data points with mapped nodes (indices) to surface file, 
 # no auxilliary array, no masking in HA is recommended since we already defined the node indices
@@ -459,7 +461,7 @@ elif hemi == 'right':
     hcp_struct = hcp.struct.cortex_right
 
 # REST1LR --> training SL-HA
-cp_rest1LR = np.load('cp_rest1LR_200sbj.npy')
+cp_rest1LR = np.load('cp_REST1_LR_200sbj.npy')
 dss_rest1LR = []
 for k in range(len(cp_rest1LR)):
     ds = Dataset(cp_rest1LR[k][:, hcp_struct])
@@ -616,7 +618,7 @@ _ = [zscore(ds, chunks_attr=None) for ds in dss_aligned_rest2LR]
 dss_aligned_rest2RL = [mapper.forward(ds) for ds, mapper in zip(dss_rest2RL, mappers)]
 _ = [zscore(ds, chunks_attr=None) for ds in dss_aligned_rest2RL]
 
-#%% Calculate inter-subject correlations (ISCs)
+#%% Calculate inter-subject correlations (ISCs) --> CHA
 
 # 1) Average ISCs of connectivity profiles in each surface node 
 def compute_average_similarity_node(dss, metric='correlation'):
@@ -739,17 +741,16 @@ plt.scatter(var1.mean(), var2.mean(), s=150, marker='o', color='r', edgecolors='
 plt.xlim([-0.05, 0.8]) 
 plt.ylim([-0.05, 0.8]) 
 plt.xlabel('MSM', size=22)
-plt.ylabel('CHA', size=22)
+plt.ylabel('sCHA', size=22)
 plt.xticks(fontsize=20)
 plt.yticks(fontsize=20)
 plt.plot([-1, 1], [-1, 1], 'k--')
 plt.text(var1.mean()-0.08, var2.mean()+0.03, '({:.2f}, {:.2f})'.format(var1.mean(), var2.mean()), fontsize=18, color='white', fontweight='bold')
 #plt.title('Average Pairwise Correlation', size=18)
 plt.tight_layout()
-plt.savefig('ISC-Vertex.png', dpi=300, bbox_inches='tight')
+plt.savefig('ISC-sCHA-Vertex.png', dpi=300, bbox_inches='tight')
 plt.show()
 # var2.mean()/var1.mean()
-
 
 # 1.2) Distribution of ISCs across all voxels
 import seaborn as sns
@@ -770,8 +771,7 @@ plt.xlim(-0.05, 0.9)
 plt.legend(prop={'size':20})
 plt.savefig('distribution_ISC.png', dpi=300, bbox_inches='tight')
 
-
-# 1.2) Scatter plot of individual ISCs before and after CHA with linear fit
+# 1.3) Scatter plot of individual ISCs before and after CHA with linear fit
 import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
@@ -781,12 +781,12 @@ corr_coef, _ = pearsonr(var3, var4)
 # Create scatter plot with linear regression line
 sns.set_style('white')
 plt.figure(figsize=(7, 7))
-ax = sns.regplot(x=var3, y=var4, scatter_kws={"s": 125, "alpha": 0.6, "edgecolors": 'none', "color": 'k'}, line_kws={"color": 'r'})
+ax = sns.regplot(x=var3, y=var4, scatter_kws={"s": 100, "alpha": 0.6, "edgecolors": 'none', "color": 'k'}, line_kws={"color": 'r'})
 # Add text with correlation coefficient to plot
 ax.text(0.05, 0.95, f'r = {corr_coef:.2f}', transform=ax.transAxes, fontsize=20, verticalalignment='top')
 # Set axis labels and tick sizes
 ax.set_xlabel('MSM', size=22)
-ax.set_ylabel('CHA', size=22)
+ax.set_ylabel('sCHA', size=22)
 # Set xtick and ytick labels with one decimal place
 ax.xaxis.set_major_formatter(plt.FormatStrFormatter('%.2f'))
 ax.yaxis.set_major_formatter(plt.FormatStrFormatter('%.2f'))
@@ -797,44 +797,14 @@ ax.yaxis.set_major_locator(plt.MaxNLocator(9))
 ax.tick_params(labelsize=14)
 ax.xaxis.set_tick_params(labelsize=16)
 ax.yaxis.set_tick_params(labelsize=16)
-#################### EXTRA ####################
-# Grouping participants into low/high ISCs
-# 1. Calculate the predicted values using the regression line equation
-# Perform linear regression analysis to get the slope and intercept of the regression line
-slope, intercept, r_value, p_value, std_err = linregress(var3, var4)
-# Calculate the predicted values using the regression line equation
-predicted_values = slope * var3 + intercept
-# 2. Compare actual ISC values with predicted values and create a grouping variable
-# Calculate the distances between actual ISC values and predicted values
-distances = var4 - predicted_values
-# Sort the distances
-sorted_indices = distances.argsort()
-# Determine the quartiles
-Q1_cutoff = int(len(sorted_indices) * 0.25)
-Q2_cutoff = int(len(sorted_indices) * 0.5)
-Q3_cutoff = int(len(sorted_indices) * 0.75)
-# Identify subjects in each quartile
-Q1_subjects = sorted_indices[:Q1_cutoff]
-Q2_subjects = sorted_indices[Q1_cutoff:Q2_cutoff]
-Q3_subjects = sorted_indices[Q2_cutoff:Q3_cutoff]
-Q4_subjects = sorted_indices[Q3_cutoff:]
-# Create group labels for each subject based on quartiles
-group_labels = ["Q1" if i in Q1_subjects else "Q2" if i in Q2_subjects else "Q3" if i in Q3_subjects else "Q4" for i in range(len(var3))]
-# group_labels = ['Q1', 'Q3', 'Q2', 'Q4', 'Q3', 'Q1', 'Q2', 'Q4', 'Q2', 'Q1', 'Q2', 'Q2', 'Q4', 'Q2', 'Q2', 'Q2', 'Q4', 'Q3', 'Q2', 'Q2', 'Q2', 'Q4', 'Q1', 'Q4', 'Q1', 'Q4', 'Q1', 'Q3', 'Q2', 'Q2', 'Q2', 'Q4', 'Q2', 'Q1', 'Q1', 'Q1', 'Q4', 'Q2', 'Q3', 'Q1', 'Q1', 'Q3', 'Q3', 'Q3', 'Q3', 'Q2', 'Q4', 'Q3', 'Q1', 'Q1', 'Q4', 'Q1', 'Q2', 'Q2', 'Q3', 'Q2', 'Q4', 'Q1', 'Q3', 'Q3', 'Q4', 'Q1', 'Q1', 'Q4', 'Q1', 'Q2', 'Q4', 'Q4', 'Q3', 'Q4', 'Q3', 'Q2', 'Q1', 'Q1', 'Q2', 'Q1', 'Q4', 'Q1', 'Q4', 'Q3', 'Q4', 'Q3', 'Q2', 'Q3', 'Q2', 'Q1', 'Q4', 'Q2', 'Q1', 'Q3', 'Q3', 'Q1', 'Q1', 'Q2', 'Q2', 'Q3', 'Q2', 'Q1', 'Q1', 'Q4', 'Q3', 'Q4', 'Q1', 'Q1', 'Q4', 'Q2', 'Q2', 'Q2', 'Q1', 'Q4', 'Q3', 'Q3', 'Q4', 'Q2', 'Q3', 'Q2', 'Q3', 'Q1', 'Q1', 'Q2', 'Q2', 'Q2', 'Q3', 'Q3', 'Q2', 'Q1', 'Q2', 'Q3', 'Q3', 'Q1', 'Q4', 'Q3', 'Q3', 'Q2', 'Q2', 'Q4', 'Q4', 'Q1', 'Q4', 'Q1', 'Q1', 'Q3', 'Q1', 'Q4', 'Q4', 'Q3', 'Q1', 'Q2', 'Q1', 'Q1', 'Q4', 'Q1', 'Q1', 'Q4', 'Q3', 'Q2', 'Q1', 'Q2', 'Q4', 'Q4', 'Q3', 'Q3', 'Q2', 'Q4', 'Q4', 'Q3', 'Q4', 'Q4', 'Q3', 'Q4', 'Q3', 'Q4', 'Q3', 'Q3', 'Q2', 'Q2', 'Q4', 'Q1', 'Q3', 'Q4', 'Q3', 'Q1', 'Q2', 'Q4', 'Q4', 'Q3', 'Q3', 'Q3', 'Q1', 'Q3', 'Q3', 'Q3', 'Q2', 'Q2', 'Q4', 'Q4', 'Q4', 'Q1', 'Q1', 'Q4']
-# 3. Color the points based on group labels
-for group, color in {"Q1": 'g', "Q4": 'b'}.items():
-    group_mask = [label == group for label in group_labels]
-    ax.scatter(var3[group_mask], var4[group_mask], color=color, s=125, alpha=0.6, edgecolors='none')
-###############################################
 plt.plot([.25, .6], [.25, .6], 'k--')
 # Set square aspect ratio
 plt.axis('square')
 # Save plot
-#plt.savefig('scatter_ISC.png', dpi=300, bbox_inches='tight')
+plt.savefig('scatter_ISC_sCHA.png', dpi=300, bbox_inches='tight')
 plt.show()
 
-
-# 1.3) Visualize results on cortical brain map (ONLY LEF OR RIGHT)
+# 1.4) Visualize results on cortical brain map (ONLY LEF OR RIGHT)
 view = 'medial' # {‘lateral’, ‘medial’, ‘dorsal’, ‘ventral’, ‘anterior’, ‘posterior’},
 h = 'right' # which hemisphere to train HA? 'left' or 'right'
 if h == 'left':
@@ -1278,15 +1248,17 @@ is_coarse = False  # set to True for coarse calculations, False for fine calcula
 
 # List of sessions
 sessions = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
+            'REST1_LR_RHA', 'REST1_RL_RHA', 'REST2_LR_RHA', 'REST2_RL_RHA',
             'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
+
+session_name = sessions[0]
 
 subjects = ['100206', '100307', '100408', '100610', '101006', '101107', '101309', '101915', '102008', '102311', '102513', '102816', '103111', '103414', '103515', '103818', '104012', '104416', '105014', '105115', '105216', '105620', '105923', '106016', '106319', '106521', '107018', '107321', '107422', '107725', '108121', '108222', '108323', '108525', '108828', '109123', '109325', '109830', '110007', '110411', '110613', '111009', '111312', '111413', '111716', '112112', '112314', '112516', '112920', '113215', '113619', '113922', '114217', '114318', '114419', '114621', '114823', '114924', '115017', '115219', '115320', '115825', '116524', '116726', '117122', '117324', '117930', '118124', '118528', '118730', '118932', '119126', '120212', '120515', '120717', '121416', '121618', '121921', '122317', '122620', '122822', '123117', '123420', '123521', '123824', '123925', '124220', '124422', '124624', '124826', '125525', '126325', '126628', '127327', '127630', '127933', '128026', '128127', '128632', '128935', '129028', '129129', '129331', '129634', '130013', '130316', '130417', '130619', '130821', '130922', '131217', '131419', '131722', '131823', '131924', '132017', '132118', '133019', '133827', '133928', '134021', '134223', '134324', '134425', '134728', '134829', '135225', '135528', '135730', '135932', '136227', '136732', '136833', '137027', '137128', '137229', '137633', '137936', '138231', '138534', '138837', '139233', '139637', '139839', '140319', '140824', '140925', '141119', '141826', '142828', '143426', '144125', '144428', '144832', '145127', '146129', '146331', '146432', '146533', '146937', '147030', '147737', '148032', '148133', '148335', '148840', '148941', '149236', '149337', '149539', '149741', '149842', '150625', '150726', '150928', '151223', '151425', '151526', '151627', '151728', '151829', '152831', '153025', '153227', '153429', '153631', '153833', '154229', '179245', '179346', '180129', '180432', '180735', '180836', '180937', '181131', '181232', '181636', '182032', '182436', '182739', '182840', '183034', '185139', '185341', '185442', '185846', '185947', '186141', '186444', '187143', '187547', '187850', '188347', '188448', '188751', '189349', '189450', '190031', '191033', '191336', '191437', '191942', '192035', '192136', '192540', '192641', '192843', '193239', '194140', '194645', '194746', '194847', '195041', '195647', '195849', '195950', '196144', '196346', '196750', '197348', '197550', '198249', '198350', '198451', '198653', '198855', '199150', '199251', '199453', '199655', '199958', '200008', '200614', '200917', '201111', '201414', '201818', '202113', '202719', '203418', '204016', '204319', '204420', '204622', '205725', '206222', '207123', '208024', '208125', '208226', '208327', '209127', '209228', '209329']
 n_subjects = 200
 
 if not is_coarse:
     # Define the ROI index for fine calculations
-    roi = 188
-    #roi = int(os.getenv("SGE_TASK_ID"))
+    roi = int(os.getenv("SLURM_ARRAY_TASK_ID"))
     roi_idx = np.where(hcp.mmp.map_all[:59412] == roi)[0] # only cortex
 
 # Define the connectivity measure
@@ -1296,9 +1268,6 @@ correlation_measure = ConnectivityMeasure(kind='correlation')
 # Directory containing the data files (time-series)
 data_dir = '/dcs05/ciprian/smart/farahani/SL-CHA/ts'
 
-# ***** TO BE SPECIFIED *****
-# ***** TO BE SPECIFIED *****
-session_name = sessions[4] 
 # Define the output directory and filename 
 if is_coarse:
     output_dir = '/dcs05/ciprian/smart/farahani/SL-CHA/graph_measures/coarse/'
@@ -1308,8 +1277,7 @@ else:
     output_filename = f'graph_measures_roi{roi}_{session_name}.pickle'
 
 output_path = os.path.join(output_dir, output_filename)
-# ***** TO BE SPECIFIED *****
-# ***** TO BE SPECIFIED *****
+
 
 def extract_graph_measures(session_name, n_subjects, density):
     
@@ -1338,8 +1306,7 @@ def extract_graph_measures(session_name, n_subjects, density):
         for i in range(n_rand):
             RG = nx.gnm_random_graph(G.number_of_nodes(), G.number_of_edges())
             rand_cc.append(nx.average_clustering(RG))
-            #rand_pl.append(nx.average_shortest_path_length(RG))
-            rand_pl.append(calculate_path_length(RG))
+            rand_pl.append(nx.average_shortest_path_length(RG))
         rcc = np.mean(rand_cc)
         rpl = np.mean(rand_pl)
         return (cc / rcc) / (pl / rpl)
@@ -1450,7 +1417,7 @@ for s in sets:
 sns.set_style("white", {'axes.grid':False})
 
 datasetA1, datasetB1, datasetC1, datasetD1, datasetE1, datasetF1 = [], [], [], [], [], []
-for s in sets[1:4]: # MSM (train + test)
+for s in sets[0:4]: # MSM (train + test)
     path_length = coarse_measures[s]['path_length']
     global_clustering = coarse_measures[s]['global_clustering']
     global_efficiency = coarse_measures[s]['global_efficiency']
@@ -1473,7 +1440,7 @@ datasetE1 = np.array(datasetE1).T
 datasetF1 = np.array(datasetF1).T
 
 datasetA2, datasetB2, datasetC2, datasetD2, datasetE2, datasetF2 = [], [], [], [], [], []
-for s in sets[5:8]: # CHA (train + test)
+for s in sets[4:8]: # RHA (train + test)
     path_length = coarse_measures[s]['path_length']
     global_clustering = coarse_measures[s]['global_clustering']
     global_efficiency = coarse_measures[s]['global_efficiency']
@@ -1496,7 +1463,7 @@ datasetE2 = np.array(datasetE2).T
 datasetF2 = np.array(datasetF2).T
 
 datasetA3, datasetB3, datasetC3, datasetD3, datasetE3, datasetF3 = [], [], [], [], [], []
-for s in sets[9:]: # CHA (train + test)
+for s in sets[8:]: # CHA (train + test)
     path_length = coarse_measures[s]['path_length']
     global_clustering = coarse_measures[s]['global_clustering']
     global_efficiency = coarse_measures[s]['global_efficiency']
@@ -1518,7 +1485,7 @@ datasetD3 = np.array(datasetD3).T
 datasetE3 = np.array(datasetE3).T
 datasetF3 = np.array(datasetF3).T
 
-ticks = ['REST1_RL', 'REST2_LR', 'REST2_RL']
+ticks = ['REST1_LR', 'REST1_RL', 'REST2_LR', 'REST2_RL']
 
 dfA1 = pd.DataFrame(datasetA1, columns=ticks)
 dfA2 = pd.DataFrame(datasetA2, columns=ticks)
@@ -1587,7 +1554,7 @@ for i, col in enumerate(dfA1.columns):
     xsF2.append(np.random.normal(i*3-0.0, 0.07, dfF2[col].values.shape[0]))
     xsF3.append(np.random.normal(i*3+0.7, 0.07, dfF3[col].values.shape[0]))
 
-fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(nrows=2, ncols=3, sharex=False, sharey=False, figsize=(14, 8))
+fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(nrows=2, ncols=3, sharex=False, sharey=False, figsize=(14, 7))
 
 bpA1 = ax1.boxplot(valsA1, labels=names, positions=np.array(range(len(datasetA1[0])))*3-0.7, sym='', widths=.5)
 bpA2 = ax1.boxplot(valsA2, labels=names, positions=np.array(range(len(datasetA2[0])))*3-0.0, sym='', widths=.5)
@@ -1628,36 +1595,37 @@ plt.setp(bpF2['medians'], linewidth=1, linestyle='-', color='r')
 plt.setp(bpF3['medians'], linewidth=1, linestyle='-', color='r')
 
 palette = ['r', 'g', 'b', 'y', 'm', 'c', 'k', 'tan', 'orchid', 'cyan', 'gold', 'crimson']
+size = 6
 
 for xA1, xA2, xA3, valA1, valA2, valA3, c in zip(xsA1, xsA2, xsA3, valsA1, valsA2, valsA3, palette):
-    ax1.scatter(xA1, valA1, alpha=0.5, color='#FFD700', s=10) # plt.plot(xA1, valA1, 'r.', alpha=0.4)
-    ax1.scatter(xA2, valA2, alpha=0.4, color='#D2042D', s=10)
-    ax1.scatter(xA3, valA3, alpha=0.5, color='#7F00FF', s=10)
+    ax1.scatter(xA1, valA1, alpha=0.5, color='#FFD700', s=size) # plt.plot(xA1, valA1, 'r.', alpha=0.4)
+    ax1.scatter(xA2, valA2, alpha=0.5, color='#4CBB17', s=size)
+    ax1.scatter(xA3, valA3, alpha=0.5, color='#7F00FF', s=size)
     
 for xB1, xB2, xB3, valB1, valB2, valB3, c in zip(xsB1, xsB2, xsB3, valsB1, valsB2, valsB3, palette):
-    ax2.scatter(xB1, valB1, alpha=0.5, color='#FFD700', s=10)
-    ax2.scatter(xB2, valB2, alpha=0.4, color='#D2042D', s=10)   
-    ax2.scatter(xB3, valB3, alpha=0.5, color='#7F00FF', s=10)
+    ax2.scatter(xB1, valB1, alpha=0.5, color='#FFD700', s=size)
+    ax2.scatter(xB2, valB2, alpha=0.5, color='#4CBB17', s=size)   
+    ax2.scatter(xB3, valB3, alpha=0.5, color='#7F00FF', s=size)
     
 for xC1, xC2, xC3, valC1, valC2, valC3, c in zip(xsC1, xsC2, xsC3, valsC1, valsC2, valsC3, palette):
-    ax3.scatter(xC1, valC1, alpha=0.5, color='#FFD700', s=10)
-    ax3.scatter(xC2, valC2, alpha=0.4, color='#D2042D', s=10) 
-    ax3.scatter(xC3, valC3, alpha=0.5, color='#7F00FF', s=10)
+    ax3.scatter(xC1, valC1, alpha=0.5, color='#FFD700', s=size)
+    ax3.scatter(xC2, valC2, alpha=0.5, color='#4CBB17', s=size) 
+    ax3.scatter(xC3, valC3, alpha=0.5, color='#7F00FF', s=size)
     
 for xD1, xD2, xD3, valD1, valD2, valD3, c in zip(xsD1, xsD2, xsD3, valsD1, valsD2, valsD3, palette):
-    ax4.scatter(xD1, valD1, alpha=0.5, color='#FFD700', s=10)
-    ax4.scatter(xD2, valD2, alpha=0.4, color='#D2042D', s=10) 
-    ax4.scatter(xD3, valD3, alpha=0.5, color='#7F00FF', s=10)
+    ax4.scatter(xD1, valD1, alpha=0.5, color='#FFD700', s=size)
+    ax4.scatter(xD2, valD2, alpha=0.5, color='#4CBB17', s=size) 
+    ax4.scatter(xD3, valD3, alpha=0.5, color='#7F00FF', s=size)
 
 for xE1, xE2, xE3, valE1, valE2, valE3, c in zip(xsE1, xsE2, xsE3, valsE1, valsE2, valsE3, palette):
-    ax5.scatter(xE1, valE1, alpha=0.5, color='#FFD700', s=10)
-    ax5.scatter(xE2, valE2, alpha=0.4, color='#D2042D', s=10) 
-    ax5.scatter(xE3, valE3, alpha=0.5, color='#7F00FF', s=10)
+    ax5.scatter(xE1, valE1, alpha=0.5, color='#FFD700', s=size)
+    ax5.scatter(xE2, valE2, alpha=0.5, color='#4CBB17', s=size) 
+    ax5.scatter(xE3, valE3, alpha=0.5, color='#7F00FF', s=size)
     
 for xF1, xF2, xF3, valF1, valF2, valF3, c in zip(xsF1, xsF2, xsF3, valsF1, valsF2, valsF3, palette):
-    ax6.scatter(xF1, valF1, alpha=0.5, color='#FFD700', s=10)
-    ax6.scatter(xF2, valF2, alpha=0.4, color='#D2042D', s=10)
-    ax6.scatter(xF3, valF3, alpha=0.5, color='#7F00FF', s=10)
+    ax6.scatter(xF1, valF1, alpha=0.5, color='#FFD700', s=size)
+    ax6.scatter(xF2, valF2, alpha=0.5, color='#4CBB17', s=size)
+    ax6.scatter(xF3, valF3, alpha=0.5, color='#7F00FF', s=size)
 
 # Use the pyplot interface to customize any subplot...
 # First subplot
@@ -1669,8 +1637,8 @@ plt.xlim(-1.5, len(ticks)*3-1.5)
 plt.ylabel("Path Length", fontweight='normal', fontsize=14)
 #plt.xlabel("Test Sets", fontweight='normal', fontsize=16)
 plt.plot([], c='#FFD700', label='MSM', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
-plt.plot([], c='#D2042D', label='RHA', marker='o', linestyle='None', markersize=8)
-plt.plot([], c='#7F00FF', label='CHA', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#4CBB17', label='rCHA', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#7F00FF', label='sCHA', marker='o', linestyle='None', markersize=8)
 # # Statistical annotation
 # xs1 = np.array([]) # [-0.5, 2.5, 5.5]
 # xs2 = np.array([]) # [0.5, 3.5, 6.5]
@@ -1687,8 +1655,8 @@ plt.xlim(-1.5, len(ticks)*3-1.5)
 plt.ylabel("Clustering Coefficient", fontweight='normal', fontsize=14)
 #plt.xlabel("Test Sets", fontweight='normal', fontsize=16)
 plt.plot([], c='#FFD700', label='MSM', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
-plt.plot([], c='#D2042D', label='RHA', marker='o', linestyle='None', markersize=8)
-plt.plot([], c='#7F00FF', label='CHA', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#4CBB17', label='rCHA', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#7F00FF', label='sCHA', marker='o', linestyle='None', markersize=8)
 # # Statistical annotation
 # xs1 = np.array([-0.5, 2.5, 5.5])
 # xs2 = np.array([0.5, 3.5, 6.5])
@@ -1706,8 +1674,8 @@ plt.ylim(top=.68)
 plt.ylabel("Global Efficiency", fontweight='normal', fontsize=14)
 #plt.xlabel("Test Sets", fontweight='normal', fontsize=16)
 plt.plot([], c='#FFD700', label='MSM', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
-plt.plot([], c='#D2042D', label='RHA', marker='o', linestyle='None', markersize=8)
-plt.plot([], c='#7F00FF', label='CHA', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#4CBB17', label='rCHA', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#7F00FF', label='sCHA', marker='o', linestyle='None', markersize=8)
 # # Statistical annotation
 # xs1 = np.array([-0.5, 2.5, 5.5])
 # xs2 = np.array([0.5, 3.5, 6.5])
@@ -1724,8 +1692,8 @@ plt.xlim(-1.5, len(ticks)*3-1.5)
 plt.ylabel("Assortativity", fontweight='normal', fontsize=14)
 #plt.xlabel("Test Sets", fontweight='normal', fontsize=16)
 plt.plot([], c='#FFD700', label='MSM', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
-plt.plot([], c='#D2042D', label='RHA', marker='o', linestyle='None', markersize=8)
-plt.plot([], c='#7F00FF', label='CHA', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#4CBB17', label='rCHA', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#7F00FF', label='sCHA', marker='o', linestyle='None', markersize=8)
 # # Statistical annotation
 # xs1 = np.array([-0.5, 2.5, 5.5])
 # xs2 = np.array([0.5, 3.5, 6.5])
@@ -1742,8 +1710,8 @@ plt.xlim(-1.5, len(ticks)*3-1.5)
 plt.ylabel("Modularity (single-layer)", fontweight='normal', fontsize=14)
 #plt.xlabel("Test Sets", fontweight='normal', fontsize=16)
 plt.plot([], c='#FFD700', label='MSM', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
-plt.plot([], c='#D2042D', label='RHA', marker='o', linestyle='None', markersize=8)
-plt.plot([], c='#7F00FF', label='CHA', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#4CBB17', label='rCHA', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#7F00FF', label='sCHA', marker='o', linestyle='None', markersize=8)
 # # Statistical annotation
 # xs1 = np.array([])
 # xs2 = np.array([])
@@ -1761,8 +1729,8 @@ plt.ylim(top=3.3)
 plt.ylabel("Small-worldness", fontweight='normal', fontsize=14)
 #plt.xlabel("Test Sets", fontweight='normal', fontsize=16)
 plt.plot([], c='#FFD700', label='MSM', marker='o', linestyle='None', markersize=8) # e.g. of other colors, '#2C7BB6' https://htmlcolorcodes.com/ 
-plt.plot([], c='#D2042D', label='RHA', marker='o', linestyle='None', markersize=8)
-plt.plot([], c='#7F00FF', label='CHA', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#4CBB17', label='rCHA', marker='o', linestyle='None', markersize=8)
+plt.plot([], c='#7F00FF', label='sCHA', marker='o', linestyle='None', markersize=8)
 # # Statistical annotation
 # xs1 = np.array([-0.5, 2.5, 5.5])
 # xs2 = np.array([0.5, 3.5, 6.5])
@@ -1797,6 +1765,7 @@ plt.show()
 # =============================================================================
 
 #%% shaded ERROR BAR (local measures, coarse scale)
+
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.ticker import FormatStrFormatter
@@ -1994,7 +1963,181 @@ plt.savefig('/Users/Farzad/Desktop/Figures/ShadedErrorbar_test.pdf',
             bbox_inches='tight', pad_inches=0, format='pdf', dpi=300) 
 plt.show()
 
-#%% Regression (coarse scale) + catplot
+#%% Workbench plot: Local measures (coarse)
+
+import os
+import pickle
+import nibabel as nib
+import numpy as np
+import hcp_utils as hcp
+
+sets = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
+        'REST1_LR_RHA', 'REST1_RL_RHA', 'REST2_LR_RHA', 'REST2_RL_RHA',
+        'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
+
+
+x = np.array(coarse_measures['REST1_LR_RHA']['degree'])
+y = np.array(coarse_measures['REST1_LR_CHA']['degree'])
+
+from scipy.stats import ttest_ind
+from statsmodels.stats.multitest import multipletests
+
+# Collect all p-values
+p_values_all = []
+
+for region in range(360):
+    # Perform t-test for the current region
+    t_statistic, p_value = ttest_ind(x[:, region], y[:, region])
+    
+    # Store the p-value for the current region
+    p_values_all.append(p_value)
+
+# Perform BH correction
+reject, p_values_corrected, _, _ = multipletests(p_values_all, method='fdr_bh')
+
+# Collect significant regions after correction
+significant_regions_bh = np.where(reject)[0]
+
+# Print or use the corrected p-values and significant regions as needed
+print("Significant regions with BH corrected p-value < 0.05:", significant_regions_bh)
+
+# Obtain the local measure
+val_msm = np.mean(np.array(coarse_measures['REST1_LR_MSM']['degree']), axis=0)
+val_rha = np.mean(np.array(coarse_measures['REST1_LR_RHA']['degree']), axis=0)
+val_cha = np.mean(np.array(coarse_measures['REST1_LR_CHA']['degree']), axis=0)
+
+# Compute the difference in degree centrality
+val_diff = val_rha - val_cha
+
+# Normalize the difference using min-max scaling
+# val_diff_normalized = (val_diff - np.min(val_diff)) / (np.max(val_diff) - np.min(val_diff))
+val_diff_normalized = 2 * (val_diff - np.min(val_diff)) / (np.max(val_diff) - np.min(val_diff)) - 1
+
+mmp_path = '/Volumes/Elements/Hyperalignment/HCP/workbench/MMP/'
+
+# Load the CIFTI2 file
+nifti_file = os.path.join(mmp_path, 'S1200.MyelinMap_BC_MSMAll.32k_fs_LR.dscalar.nii')
+img = nib.load(nifti_file)
+
+# Get the data array
+data = img.get_fdata()
+
+# Create a new data array with the same shape as the original data array
+new_data = np.zeros_like(data)
+
+# # Assign the normalized difference in degree centrality to the corresponding regions
+# for roi in range(1, 361):
+#     roi_idx = np.where(hcp.mmp.map_all[:59412] == roi)[0]
+#     new_data[0, roi_idx] = val_diff_normalized[roi-1]
+    
+# Assign the normalized difference in degree centrality to the corresponding significant regions
+for roi in significant_regions_bh:
+    roi_idx = np.where(hcp.mmp.map_all[:59412] == roi + 1)[0]  # Adjusted index by adding 1
+    new_data[0, roi_idx] = val_diff_normalized[roi]    
+
+# Create a new CIFTI2 image with the modified data
+new_img = nib.Cifti2Image(new_data, img.header)
+
+# Save the modified CIFTI2 file
+output_file = os.path.join(mmp_path, 'output', 'degree_RHA-CHA.dscalar.nii')
+nib.save(new_img, output_file)
+
+#%% ** Difference Line Plot ** Comparison of Local Network Measures (Coarse)
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+import hcp_utils as hcp
+
+# Define the available measures
+measures = ['degree', 'eigenvector_centrality', 'closeness_centrality', 'local_clustering', 'k_coreness'] 
+
+# Map measure names to desired labels
+measure_labels = {'degree': 'Degree', 
+                  'eigenvector_centrality': 'Eigenvector Centrality',
+                  'closeness_centrality': 'Closeness Centrality',
+                  'local_clustering': 'Clustering Coefficient',
+                  'k_coreness': 'K-coreness'}
+
+# Find the indices of 180 (half) or 360 (whole brain) regions based on 12 networks of cole/anticevic
+n_roi = 180  # 180 or 360
+index = np.zeros((n_roi,))  # whole brain: np.zeros((360,))
+for roi in range(1, n_roi+1):  # whole brain: range(1,361)
+    r = roi-1
+    index_parcel = np.where(hcp.mmp.map_all == roi)[0][0]  # mmp or ca_parcels
+    index[r] = hcp.ca_network.map_all[index_parcel]  # ca_network
+# create sorted index
+index_sorted = index.argsort(kind='stable')
+
+# Add colorful rectangles as labels below the x-axis
+split = np.array([-0.5, 2.5, 29.5, 48.5, 75.5, 87.5, 101.5, 123.5, 131.5, 171.5, 174.5, 176.5, 179.5]) # half brain
+color = ['#0020FF', '#7830F0', '#3EFCFD', '#B51DB4', '#00F300', '#009091', '#FFFE16', '#FB64FE', '#FF2E00', '#C47A31', '#FFB300', '#5A9B00']
+network_labels = ['Primary Visual', 'Secondary Visual', 'Somatomotor', 'Cingulo-Opercular', 'Dorsal Attention', 'Language',
+                  'Frontoparietal', 'Auditory', 'Default Mode', 'Posterior Multimodal', 'Ventral Multimodal', 'Orbito-Affective']
+
+# Set the figure size
+plt.figure(figsize=(20, 20))  # Adjust the width and height as needed
+
+for i, measure in enumerate(measures, 1):
+    # Calculate the mean for each measure
+    msm = np.mean(np.array(coarse_measures['REST1_RL_MSM'][measure])[:, index_sorted], axis=0)
+    rha = np.mean(np.array(coarse_measures['REST1_RL_RHA'][measure])[:, index_sorted], axis=0)
+    cha = np.mean(np.array(coarse_measures['REST1_RL_CHA'][measure])[:, index_sorted], axis=0)
+    
+    # Calculate the difference
+    msm_rha = msm - rha
+    msm_cha = msm - cha
+    
+    # Smoothing the difference using a moving average with a window size of 5
+    msm_rha = np.convolve(msm_rha, np.ones(5) / 5, mode='same')
+    msm_cha = np.convolve(msm_cha, np.ones(5) / 5, mode='same')
+    
+    # Plot the difference for RHA
+    plt.subplot(len(measures), 1, i) # linewidth=0.5, markersize=3.5, markeredgewidth=0.4
+    plt.plot(msm_rha, color='black', linewidth=0.7, label='MSM - rCHA', marker='o', markersize=4, markeredgewidth=0.5, markerfacecolor='#4CBB17', markeredgecolor='black')
+    plt.axhline(0, color='red', linestyle='--', linewidth=1)  # No need for legend (label='Y=0')
+    plt.fill_between(range(len(msm_rha)), msm_rha, 0, where=(msm_rha >= 0), hatch='////', edgecolor='k', facecolor='none', interpolate=True, alpha=0.4, label='MSM > rCHA')
+    plt.fill_between(range(len(msm_rha)), msm_rha, 0, where=(msm_rha <= 0), hatch='\\\\\\\\', edgecolor='k', facecolor='none', interpolate=True, alpha=0.4, label='MSM < rCHA')
+    # Plot the difference for CHA
+    plt.plot(msm_cha, color='black', linewidth=0.7, label='MSM - sCHA', marker='o', markersize=4, markeredgewidth=0.5, markerfacecolor='#7F00FF', markeredgecolor='black')
+    plt.fill_between(range(len(msm_cha)), msm_cha, 0, where=(msm_cha >= 0), facecolor='#FFD700', interpolate=True, alpha=0.4, label='MSM > sCHA')
+    plt.fill_between(range(len(msm_cha)), msm_cha, 0, where=(msm_cha <= 0), facecolor='#7F00FF', interpolate=True, alpha=0.4, label='MSM < sCHA')
+    
+    # Find the y-axis limit
+    y_min, y_max = plt.ylim()
+    h = (y_max - y_min) / 25
+    
+    # Add colorful rectangles as labels below the x-axis
+    for j in range(len(split) - 1):
+        rect = patches.Rectangle((split[j] + 0.5, y_min - h), width=split[j + 1] - split[j], height=h, clip_on=False, linewidth=0.4, edgecolor='k', facecolor=color[j])
+        plt.gca().add_patch(rect)
+    
+    # Add y-label
+    plt.text(-0.04, 0.5, measure_labels[measure], fontsize=17, ha='center', va='center', rotation=90, transform=plt.gca().transAxes)
+    plt.yticks(fontsize=13)
+    plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))  # Scientific notation for y-axis
+    
+    # Add legend with increased font size for the first subplot
+    if i == 1:
+        plt.legend(fontsize=15, loc='upper left', bbox_to_anchor=(0.037, 1.0), ncol=2)
+    
+    # Add grid and remove top and right spines
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+
+    # Remove xtick labels
+    plt.xticks([])
+
+# Custom legend for network names
+network_patches = [patches.Patch(color=color[i], label=network_labels[i]) for i in range(len(color))]
+plt.legend(handles=network_patches, loc='lower center', bbox_to_anchor=(0.5, -0.3), ncol=6, fontsize=16, handlelength=2, frameon=False)
+
+
+plt.tight_layout()  # Adjust layout for better appearance
+plt.savefig('/Users/Farzad/Desktop/Figures/local_diff.pdf', bbox_inches='tight', pad_inches=0, format='pdf', dpi=300) 
+plt.show()
+
+#%% Regression (Coarse) + Braplot
 
 import numpy as np
 import pandas as pd
@@ -2031,6 +2174,11 @@ demo.index = demo.index.astype(str)
 behav_data = demo.loc[subjects[:n_subjects]]
 behav_data.fillna(behav_data.mean(), inplace=True)
 
+# Shuffle the Rows: Chance performance
+behav_data_shuffled = behav_data.sample(frac=1)
+# y_train --> behav_data_shuffled
+# y_test --> behav_data
+
 sets = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
         'REST1_LR_RHA', 'REST1_RL_RHA', 'REST2_LR_RHA', 'REST2_RL_RHA',
         'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
@@ -2054,59 +2202,63 @@ for measure in measures:
         results_mse.at[measure, pred_set[s][2]] = mse
         results_r2.at[measure, pred_set[s][2]] = r2
 
-#%% Catplot
+#%% Braplot
 
-import seaborn as sns
 import matplotlib.pyplot as plt
-import pandas as pd
 
-# Set style and color palette
-sns.set(style="whitegrid")
-palette = ['#FFD700', '#D2042D', '#7F00FF']
+def plot_measure(results_mse, measure):
+    # Define the groups for each condition
+    group1 = ['MSM: REST1_RL', 'MSM: REST2_LR', 'MSM: REST2_RL']
+    group2 = ['RHA: REST1_RL', 'RHA: REST2_LR', 'RHA: REST2_RL']
+    group3 = ['CHA: REST1_RL', 'CHA: REST2_LR', 'CHA: REST2_RL']
+    
+    # Define the mapping of measure names to desired labels
+    measure_labels = {'degree': 'Degree', 
+                      'eigenvector_centrality': 'Eigenvector Centrality',
+                      'closeness_centrality': 'Closeness Centrality',
+                      'local_clustering': 'Clustering Coefficient',
+                      'k_coreness': 'K-coreness'}
+    
+    # Select the data for the given measure
+    measure_data = results_mse.loc[measure]
+    
+    # Extract data for each group
+    group1_data = measure_data[group1]
+    group2_data = measure_data[group2]
+    group3_data = measure_data[group3]
+    
+    # Plotting
+    fig, ax = plt.subplots(figsize=(5, 4))  # Adjust the figure size for better visibility
 
-# Create a new DataFrame with four columns
-data = []
+    bar_width = 0.2
+    index = range(len(group1_data))
 
-# Populate the list with the data
-for measure in measures:
-    for s in range(len(pred_set)):
-        mse_value = results_mse.at[measure, pred_set[s][2]]
-        test_value = pred_set[s][2].split(': ')[1]
-        alignment_value = pred_set[s][2].split(': ')[0]
-        data.append({'MSE': mse_value, 'Measure': measure, 'Test': test_value, 'Alignment': alignment_value})
+    bar1 = ax.bar(index, group1_data, bar_width, label='MSM', color='#FFD700', edgecolor='gray')
+    bar2 = ax.bar([i + bar_width for i in index], group2_data, bar_width, label='rCHA', color='#4CBB17', edgecolor='gray') 
+    bar3 = ax.bar([i + 2*bar_width for i in index], group3_data, bar_width, label='sCHA', color='#7F00FF', edgecolor='gray')
 
-# Create the DataFrame
-df = pd.DataFrame(data)
+    # Adding labels
+    ax.set_ylabel('MSE', fontsize=14)
+    ax.set_title(measure_labels.get(measure, measure), fontsize=16)  # Use measure label or measure name if label not found
+    ax.set_xticks([i + 1.5 * bar_width for i in index])  # Adjusted xticks position
+    ax.set_xticklabels(['REST1_RL', 'REST2_LR', 'REST2_RL'], rotation=0, ha='center', fontsize=14)  # Centered xtick labels
 
-# Set plot style and dimensions
-sns.set(style="whitegrid")
-plt.figure(figsize=(10, 4))
+    # Remove vertical grid
+    ax.grid(axis='y', linestyle='--', alpha=0.7)
+    ax.grid(axis='x', which='both', linestyle='')
 
-# Create the catplot
-ax = sns.catplot(x="Test", y="MSE", hue="Alignment", col="Measure",
-                 data=df, kind="bar", legend=False, legend_out=False,
-                 height=4, aspect=.8, sharey=False, palette=palette)
+    # Customize tick parameters
+    ax.tick_params(axis='both', which='both', length=0)
 
-# Set custom column names
-col_names = ['Degree', 'Eigenvector Centrality', 'Closeness Centrality', 'Clustering Coefficient', 'K-coreness'] # 'Pagerank Centrality', 
-for i, col_name in enumerate(col_names):
-    ax.axes[0][i].set_title(col_name, fontsize=14)
+    # Hide right and top axes
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
 
-# Set axis labels and ticks
-ax.set_axis_labels("", "MSE")
-ax.set_xticklabels(["T1: R2RL", "T2: R2LR", "T3: R2RL"])
+    # Adding legend
+    ax.legend()
 
-# Set plot limits and remove spines
-#ax.set(ylim=(0, 1))
-sns.despine(left=True)
-
-# Adjust layout and legend
-plt.tight_layout()
-plt.legend(loc='upper left')
-plt.subplots_adjust(wspace=0.15)
-
-# Save and show the plot
-plt.savefig('/Users/Farzad/Desktop/Figures/catplot_local_coarse.pdf')
+# Example usage for a different measure
+plot_measure(results_mse, 'local_clustering') # 'degree', 'eigenvector_centrality', 'closeness_centrality', 'local_clustering', 'k_coreness'
 plt.show()
 
 #%% #######################################################################
@@ -2148,6 +2300,11 @@ demo.index = demo.index.astype(str)
 behav_data = demo.loc[subjects[:n_subjects]]
 behav_data.fillna(behav_data.mean(), inplace=True)
 
+# Shuffle the Rows: Chance performance
+behav_data_shuffled = behav_data.sample(frac=1)
+# y_train --> behav_data_shuffled
+# y_test --> behav_data
+
 sets = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
         'REST1_LR_RHA', 'REST1_RL_RHA', 'REST2_LR_RHA', 'REST2_RL_RHA',
         'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
@@ -2185,8 +2342,8 @@ for measure in measures:
 # Save and Load Results
 # =============================================================================
 # output_dir = '/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/'
-# filepath_mse = os.path.join(output_dir, 'results_mse.pickle')
-# filepath_r2 = os.path.join(output_dir, 'results_r2.pickle')
+# filepath_mse = os.path.join(output_dir, 'results_mse_chance.pickle')
+# filepath_r2 = os.path.join(output_dir, 'results_r2_chance.pickle')
 # 
 # # Save results to a file
 # with open(filepath_mse, 'wb') as f:
@@ -2196,6 +2353,9 @@ for measure in measures:
 # =============================================================================
 
 #%% Raincloud plots
+
+# conda activate env_pytorch
+
 import os
 import pickle
 import numpy as np
@@ -2207,18 +2367,19 @@ import ptitprince as pt # pip install ptitprince
 
 # Load results from the saved file
 output_dir = '/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/'
-filepath_mse = os.path.join(output_dir, 'results_mse.pickle')
-filepath_r2 = os.path.join(output_dir, 'results_r2.pickle')
+filepath_mse = os.path.join(output_dir, 'results_mse_chance.pickle')
+filepath_r2 = os.path.join(output_dir, 'results_r2_chance.pickle')
 with open(filepath_mse, 'rb') as f:
     results_mse = pickle.load(f)
 with open(filepath_r2, 'rb') as f:
     results_r2 = pickle.load(f) 
 
 measures = ['Degree', 'Eigenvector Centrality', 'Closeness Centrality', 'Pagerank Centrality', 'Clustering Coefficient', 'K-coreness']
+indices = [1, 2, 4, 0, 3, 5]
 
 sns.set_style("white")
 f, axes = plt.subplots(nrows=2, ncols=3, sharex=False, sharey=True, figsize=(12, 7)) # dpi=300
-for i, ax in enumerate(axes.flatten()):
+for i, ax in zip(indices, axes.flatten()):
     key = list(results_mse.keys())[i]
     df = results_mse[key]
     # Create a new DataFrame with the desired columns
@@ -2244,8 +2405,8 @@ for i, ax in enumerate(axes.flatten()):
         new_df = pd.concat([new_df, temp_df], ignore_index=True)
     
     pt.RainCloud(x='Test', y='MSE', hue='Alignment', data=new_df, 
-          palette=['#FFD700', '#D2042D', '#7F00FF'], width_viol=.7, width_box=.25,
-          jitter=1, move=0, orient='h', alpha=.75, dodge=True,
+          palette=['#FFD700', '#4CBB17', '#7F00FF'], width_viol=.7, width_box=.25,
+          jitter=1, move=0, orient='h', alpha=.7, dodge=True,
           scale='area', cut=2, bw=.2, offset=None, ax=ax,
           point_size=2, edgecolor='black', linewidth=1, pointplot=False) 
     
@@ -2255,13 +2416,14 @@ for i, ax in enumerate(axes.flatten()):
     ax.set_ylabel('Test Set', fontsize = 10) # ylabel
     ax.tick_params(axis='x', labelsize=8)
     ax.tick_params(axis='y', labelsize=8)
+    ax.set_yticklabels([])
     ax.get_legend().remove() 
 
 # Add legend
-# plt.legend(prop={'size': 12}, frameon=False, bbox_to_anchor=(0.5, -0.2), loc='upper center')
+#plt.legend(prop={'size': 12}, frameon=False, bbox_to_anchor=(0.5, -0.2), loc='upper center')
 
 plt.tight_layout()
-plt.savefig('/Users/Farzad/Desktop/Figures/Raincloud_plot.pdf') 
+plt.savefig('/Users/Farzad/Desktop/Figures/Raincloud_plott.pdf') 
 plt.show()
 
 #%% Radar chart for MSEs across networks --> env pytorch
@@ -2279,7 +2441,7 @@ index = np.zeros((360,))
 for roi in range(1,361):
     r = roi-1
     index_parcel = np.where(hcp.ca_parcels.map_all==roi)[0][0] # first one is enough
-    index[r] = hcp.yeo17.map_all[index_parcel]
+    index[r] = hcp.ca_network.map_all[index_parcel]
 
 # =============================================================================
 # nets = ['Visual A', 'Visual B', 'Somatomotor A', 'Somatomotor B', 'Temporal Parietal', 'Dorsal Attention A',
@@ -2290,8 +2452,8 @@ for roi in range(1,361):
 # Create an empty dictionary to store the mean values for each group
 data = {'MSM': [], 'RHA': [], 'CHA': []}
 
-# Iterate over the file indices from 1 to 17
-for net in range(1, 18):
+# Iterate over the file indices from 1 to 12/17
+for net in range(1, 13):
 
     mean_msm = results_mse[measure].loc[index==net, ['MSM: REST1_RL', 'MSM: REST2_LR', 'MSM: REST2_RL']].mean()
     mean_rha = results_mse[measure].loc[index==net, ['RHA: REST1_RL', 'RHA: REST2_LR', 'RHA: REST2_RL']].mean()
@@ -2304,7 +2466,7 @@ for net in range(1, 18):
 
 # Create the DataFrame from the dictionary
 df = pd.DataFrame(data).transpose()
-df.columns = range(1, 18)
+df.columns = range(1, 13)
 
 # number of variable
 networks = list(df)
@@ -2338,14 +2500,14 @@ elif measure == 'eigenvector_centrality':
     yticks = [23,23.3,23.6,23.9,24.2]
     yticks_string = [str(ytick) for ytick in yticks]
     plt.yticks(yticks, yticks_string, color="grey", size=7)
-    plt.ylim(22.5,24.4)  
+    plt.ylim(22.5,24.5)  
 elif measure == 'closeness_centrality':
     label = 'Closeness Centrality'
     ax.set_rlabel_position(0)
-    yticks = [20,21.5,23,24.5,26]
+    yticks = [20,21,22,23,24]
     yticks_string = [str(ytick) for ytick in yticks]
     plt.yticks(yticks, yticks_string, color="grey", size=7)
-    plt.ylim(20,25.5)  
+    plt.ylim(20,25)  
 elif measure == 'local_clustering':
     label = 'Clustering Coefficient'
     ax.set_rlabel_position(0)
@@ -2372,9 +2534,9 @@ ax.fill(angles, values, color_msm, alpha=0.15)
 # Group 2: RHA
 values = df.loc['RHA'].values.flatten().tolist()
 values += values[:1]
-color_rha = '#D2042D'  # Existing color for RHA
-dark_color_rha = '#A00323'  # Darker shade for RHA
-ax.plot(angles, values, linewidth=1, linestyle='solid', label="RHA", color=dark_color_rha)
+color_rha = '#4CBB17'  # Existing color for RHA
+dark_color_rha = '#3D9612'  # Darker shade for RHA
+ax.plot(angles, values, linewidth=1, linestyle='solid', label="rCHA", color=dark_color_rha)
 ax.fill(angles, values, color_rha, alpha=0.15)
 
 # Group 3: CHA
@@ -2382,7 +2544,7 @@ values = df.loc['CHA'].values.flatten().tolist()
 values += values[:1]
 color_cha = '#7F00FF'  # Existing color for CHA
 dark_color_cha = '#4B0082'  # Darker shade for CHA
-ax.plot(angles, values, linewidth=1, linestyle='solid', label="CHA", color=dark_color_cha)
+ax.plot(angles, values, linewidth=1, linestyle='solid', label="sCHA", color=dark_color_cha)
 ax.fill(angles, values, color_cha, alpha=0.15)
 
 # Add title
@@ -2396,7 +2558,7 @@ plt.savefig(f'/Users/Farzad/Desktop/Figures/radar_{measure}.pdf',
             bbox_inches='tight', pad_inches=0, format='pdf', dpi=600)
 plt.show()
 
-#%% Brain maps based on integration/recruitment
+#%% Visualize Brain maps (diffrences between sessions across measures)
 import numpy as np
 import hcp_utils as hcp
 import matplotlib.pyplot as plt
@@ -2503,6 +2665,55 @@ figure = plotting.view_surf(hcp_mesh, # vmax=0.9,
     bg_map=hcp_mesh_sulc)
 figure.open_in_browser()
 
+#%% Visualize through Workbench
+
+import os
+import pickle
+import nibabel as nib
+import numpy as np
+import hcp_utils as hcp
+
+n_roi = 360
+
+# Obtain the MSE
+# eigenvector_centrality, closeness_centrality, local_clustering
+# REST1_RL, REST2_LR, REST2_RL
+data_msm = results_mse['local_clustering']['MSM: REST1_RL'].values # MSM
+data_rha = results_mse['local_clustering']['RHA: REST1_RL'].values # RHA
+data_cha = results_mse['local_clustering']['CHA: REST1_RL'].values # CHA
+
+# Compute the difference
+data_diff = data_msm - data_cha
+
+# Normalize the difference using min-max scaling
+#data_diff_normalized = (data_diff - np.min(data_diff)) / (np.max(data_diff) - np.min(data_diff))   # range 0-1
+#data_diff_normalized = 2 * (data_diff - np.min(data_diff)) / (np.max(data_diff) - np.min(data_diff)) - 1  # range -1+1
+data_diff_normalized = data_diff/max(abs(data_diff)) # normalize between -1 to 1
+
+mmp_path = '/Volumes/Elements/Hyperalignment/HCP/workbench/MMP/'
+
+# Load the CIFTI2 file
+nifti_file = os.path.join(mmp_path, 'S1200.MyelinMap_BC_MSMAll.32k_fs_LR.dscalar.nii')
+img = nib.load(nifti_file)
+
+# Get the data array
+data = img.get_fdata()
+
+# Create a new data array with the same shape as the original data array
+new_data = np.zeros_like(data)
+
+# Assign the normalized difference in degree centrality to the corresponding regions
+for roi in range(1, 361):
+    roi_idx = np.where(hcp.mmp.map_all[:59412] == roi)[0]
+    new_data[0, roi_idx] = data_diff_normalized[roi-1]  
+
+# Create a new CIFTI2 image with the modified data
+new_img = nib.Cifti2Image(new_data, img.header)
+
+# Save the modified CIFTI2 file
+output_file = os.path.join(mmp_path, 'output', 'Clustering_MSM-CHA.dscalar.nii')
+nib.save(new_img, output_file)
+
 #%% Regression (fine scale - global measures) + catplot
 import os
 import numpy as np
@@ -2526,8 +2737,12 @@ subjects = ['100206', '100307', '100408', '100610', '101006', '101107', '101309'
 n_subjects = 200
 
 sets = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
+        'REST1_LR_RHA', 'REST1_RL_RHA', 'REST2_LR_RHA', 'REST2_RL_RHA',
         'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
-pred_set = np.array([[0, 1, 'MSM: REST1_RL'], [0, 2, 'MSM: REST2_LR'], [0, 3, 'MSM: REST2_RL'], [4, 5, 'CHA: REST1_RL'], [4, 6, 'CHA: REST2_LR'], [4, 7, 'CHA: REST2_RL']])
+
+pred_set = np.array([[0, 1, 'MSM: REST1_RL'], [0, 2, 'MSM: REST2_LR'], [0, 3, 'MSM: REST2_RL'], 
+                     [4, 5, 'RHA: REST1_RL'], [4, 6, 'RHA: REST2_LR'], [4, 7, 'RHA: REST2_RL'],
+                     [8, 9, 'CHA: REST1_RL'], [8, 10, 'CHA: REST2_LR'], [8, 11, 'CHA: REST2_RL']])
 
 behav = 'Fluid_intelligence' # Age_in_Yrs, BMI, Gender, DepressionScore, Fluid_intelligence
 demo = pd.read_excel('/Volumes/Elements/HCP_Motion/DemoData.xlsx', index_col='Subject')
@@ -2571,8 +2786,8 @@ for measure in measures:
 
     print(measure)
 
+# Save Results
 # =============================================================================
-# # Save Results
 # output_dir = '/Volumes/Elements/Hyperalignment/HCP/200sbj/graph_measures/'
 # filepath_mse = os.path.join(output_dir, 'results_mse_glob.pickle')
 # filepath_r2 = os.path.join(output_dir, 'results_r2_glob.pickle')
@@ -2602,14 +2817,18 @@ with open(filepath_r2, 'rb') as f:
     results_r2 = pickle.load(f) 
 
 sets = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
+        'REST1_LR_RHA', 'REST1_RL_RHA', 'REST2_LR_RHA', 'REST2_RL_RHA',
         'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
-pred_set = np.array([[0, 1, 'MSM: REST1_RL'], [0, 2, 'MSM: REST2_LR'], [0, 3, 'MSM: REST2_RL'], [4, 5, 'CHA: REST1_RL'], [4, 6, 'CHA: REST2_LR'], [4, 7, 'CHA: REST2_RL']])
+
+pred_set = np.array([[0, 1, 'MSM: REST1_RL'], [0, 2, 'MSM: REST2_LR'], [0, 3, 'MSM: REST2_RL'], 
+                     [4, 5, 'RHA: REST1_RL'], [4, 6, 'RHA: REST2_LR'], [4, 7, 'RHA: REST2_RL'],
+                     [8, 9, 'CHA: REST1_RL'], [8, 10, 'CHA: REST2_LR'], [8, 11, 'CHA: REST2_RL']])
 
 measures = ['path_length', 'global_clustering', 'global_efficiency', 'assortativity', 'modularity', 'small_worldness']
 
 # Set style and color palette
 sns.set(style="whitegrid")
-palette = ['#FFD700', '#7F00FF']
+palette = ['#FFD700', '#4CBB17', '#7F00FF']
 
 # Create a new DataFrame with four columns
 data = []
@@ -2629,19 +2848,20 @@ df = pd.DataFrame(data)
 sns.set(style="whitegrid")
 plt.figure(figsize=(10, 4))
 
-# Create the catplot
+# Create the catplot with two rows
 ax = sns.catplot(x="Test", y="MSE", hue="Alignment", col="Measure",
                  data=df, kind="bar", legend=False, legend_out=False,
-                 height=4, aspect=.8, sharey=False, palette=palette)
+                 height=4, aspect=1.2, sharey=False, palette=palette,
+                 col_wrap=3)
 
 # Set custom column names
 col_names = ['Path Length', 'Clustering Coefficient', 'Global Efficiency', 'Assortativity', 'Modularity (single-layer)', 'Small-worldness']
 for i, col_name in enumerate(col_names):
-    ax.axes[0][i].set_title(col_name, fontsize=14)
+    ax.axes[i].set_title(col_name, fontsize=14)
 
 # Set axis labels and ticks
 ax.set_axis_labels("", "MSE")
-ax.set_xticklabels(["T1: R2RL", "T2: R2LR", "T3: R2RL"])
+ax.set_xticklabels(["REST1_RL", "REST2_LR", "REST2_RL"])
 
 # Set plot limits and remove spines
 #ax.set(ylim=(0, 1))
@@ -2655,6 +2875,7 @@ plt.subplots_adjust(wspace=0.15)
 # Save and show the plot
 plt.savefig('/Users/Farzad/Desktop/Figures/catplot_global_fine.pdf')
 plt.show()
+
 
 
 #%% Plot MSE (or R2) on the brain using workbench
@@ -3876,6 +4097,7 @@ import nibabel as nib
 
 # List of sessions and subjects
 sessions = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
+            'REST1_LR_RHA', 'REST1_RL_RHA', 'REST2_LR_RHA', 'REST2_RL_RHA',
             'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
 
 subjects = ['100206', '100307', '100408', '100610', '101006', '101107', '101309', '101915', '102008', '102311', '102513', '102816', '103111', '103414', '103515', '103818', '104012', '104416', '105014', '105115', '105216', '105620', '105923', '106016', '106319', '106521', '107018', '107321', '107422', '107725', '108121', '108222', '108323', '108525', '108828', '109123', '109325', '109830', '110007', '110411', '110613', '111009', '111312', '111413', '111716', '112112', '112314', '112516', '112920', '113215', '113619', '113922', '114217', '114318', '114419', '114621', '114823', '114924', '115017', '115219', '115320', '115825', '116524', '116726', '117122', '117324', '117930', '118124', '118528', '118730', '118932', '119126', '120212', '120515', '120717', '121416', '121618', '121921', '122317', '122620', '122822', '123117', '123420', '123521', '123824', '123925', '124220', '124422', '124624', '124826', '125525', '126325', '126628', '127327', '127630', '127933', '128026', '128127', '128632', '128935', '129028', '129129', '129331', '129634', '130013', '130316', '130417', '130619', '130821', '130922', '131217', '131419', '131722', '131823', '131924', '132017', '132118', '133019', '133827', '133928', '134021', '134223', '134324', '134425', '134728', '134829', '135225', '135528', '135730', '135932', '136227', '136732', '136833', '137027', '137128', '137229', '137633', '137936', '138231', '138534', '138837', '139233', '139637', '139839', '140319', '140824', '140925', '141119', '141826', '142828', '143426', '144125', '144428', '144832', '145127', '146129', '146331', '146432', '146533', '146937', '147030', '147737', '148032', '148133', '148335', '148840', '148941', '149236', '149337', '149539', '149741', '149842', '150625', '150726', '150928', '151223', '151425', '151526', '151627', '151728', '151829', '152831', '153025', '153227', '153429', '153631', '153833', '154229', '179245', '179346', '180129', '180432', '180735', '180836', '180937', '181131', '181232', '181636', '182032', '182436', '182739', '182840', '183034', '185139', '185341', '185442', '185846', '185947', '186141', '186444', '187143', '187547', '187850', '188347', '188448', '188751', '189349', '189450', '190031', '191033', '191336', '191437', '191942', '192035', '192136', '192540', '192641', '192843', '193239', '194140', '194645', '194746', '194847', '195041', '195647', '195849', '195950', '196144', '196346', '196750', '197348', '197550', '198249', '198350', '198451', '198653', '198855', '199150', '199251', '199453', '199655', '199958', '200008', '200614', '200917', '201111', '201414', '201818', '202113', '202719', '203418', '204016', '204319', '204420', '204622', '205725', '206222', '207123', '208024', '208125', '208226', '208327', '209127', '209228', '209329']
@@ -3901,6 +4123,7 @@ for session in sessions:
         # Save the CIFTI image to the specified output file
         img.to_filename(output_path)
         print(session, subject)
+        
 #%%
 ####################### Step 2: Parcelate the Data using Yeo Atlas ############################
 import os
@@ -3927,7 +4150,7 @@ for session in sessions:
     
     print(session)
 
-#%% Meso-coarse: create FC .mat files
+#%% Meso-coarse: Create FC .mat files
 import numpy as np
 import nibabel as nib
 from nilearn.connectome import ConnectivityMeasure
@@ -3958,7 +4181,7 @@ for session in sessions:
     
     print(session)
 
-#%% Meso-fine: create FC .mat files (Yeo17 Networks)
+#%% Meso-fine: Create FC .mat files (Yeo17 Networks)
 import os
 import numpy as np
 import nibabel as nib
@@ -3970,8 +4193,8 @@ from brainconn import utils
 
 # qsub -cwd -t 1:17 meso_fine.sh
 
-#$ -l mem_free=150G,h_vmem=150G,h_fsize=50G --> net: {3, 7}
-#$ -l mem_free=100G,h_vmem=100G,h_fsize=50G --> net: {1, 4, 7, 16, 17}
+#$ -l mem_free=150G,h_vmem=150G,h_fsize=50G --> net: {3}
+#$ -l mem_free=100G,h_vmem=100G,h_fsize=50G --> net: {4, 7, 16, 17}
 #$ -l mem_free=50G,h_vmem=50G,h_fsize=50G --> net: {others}
 
 net = int(os.getenv("SGE_TASK_ID")) # Network number in 17-Yeo Atlas
@@ -3987,33 +4210,13 @@ elif computer == 'local':
 
 # List of sessions and subjects
 sessions = ['REST1_LR_MSM', 'REST1_RL_MSM', 'REST2_LR_MSM', 'REST2_RL_MSM',
+            'REST1_LR_RHA', 'REST1_RL_RHA', 'REST2_LR_RHA', 'REST2_RL_RHA',
             'REST1_LR_CHA', 'REST1_RL_CHA', 'REST2_LR_CHA', 'REST2_RL_CHA']
 
 subjects = ['100206', '100307', '100408', '100610', '101006', '101107', '101309', '101915', '102008', '102311', '102513', '102816', '103111', '103414', '103515', '103818', '104012', '104416', '105014', '105115', '105216', '105620', '105923', '106016', '106319', '106521', '107018', '107321', '107422', '107725', '108121', '108222', '108323', '108525', '108828', '109123', '109325', '109830', '110007', '110411', '110613', '111009', '111312', '111413', '111716', '112112', '112314', '112516', '112920', '113215', '113619', '113922', '114217', '114318', '114419', '114621', '114823', '114924', '115017', '115219', '115320', '115825', '116524', '116726', '117122', '117324', '117930', '118124', '118528', '118730', '118932', '119126', '120212', '120515', '120717', '121416', '121618', '121921', '122317', '122620', '122822', '123117', '123420', '123521', '123824', '123925', '124220', '124422', '124624', '124826', '125525', '126325', '126628', '127327', '127630', '127933', '128026', '128127', '128632', '128935', '129028', '129129', '129331', '129634', '130013', '130316', '130417', '130619', '130821', '130922', '131217', '131419', '131722', '131823', '131924', '132017', '132118', '133019', '133827', '133928', '134021', '134223', '134324', '134425', '134728', '134829', '135225', '135528', '135730', '135932', '136227', '136732', '136833', '137027', '137128', '137229', '137633', '137936', '138231', '138534', '138837', '139233', '139637', '139839', '140319', '140824', '140925', '141119', '141826', '142828', '143426', '144125', '144428', '144832', '145127', '146129', '146331', '146432', '146533', '146937', '147030', '147737', '148032', '148133', '148335', '148840', '148941', '149236', '149337', '149539', '149741', '149842', '150625', '150726', '150928', '151223', '151425', '151526', '151627', '151728', '151829', '152831', '153025', '153227', '153429', '153631', '153833', '154229', '179245', '179346', '180129', '180432', '180735', '180836', '180937', '181131', '181232', '181636', '182032', '182436', '182739', '182840', '183034', '185139', '185341', '185442', '185846', '185947', '186141', '186444', '187143', '187547', '187850', '188347', '188448', '188751', '189349', '189450', '190031', '191033', '191336', '191437', '191942', '192035', '192136', '192540', '192641', '192843', '193239', '194140', '194645', '194746', '194847', '195041', '195647', '195849', '195950', '196144', '196346', '196750', '197348', '197550', '198249', '198350', '198451', '198653', '198855', '199150', '199251', '199453', '199655', '199958', '200008', '200614', '200917', '201111', '201414', '201818', '202113', '202719', '203418', '204016', '204319', '204420', '204622', '205725', '206222', '207123', '208024', '208125', '208226', '208327', '209127', '209228', '209329']
 n_subjects = 200
 
 net_idx = np.where(hcp.yeo17.map_all[:59412] == net)[0]
-
-#%%
-values = []
-
-for i in range(1, 13):
-    value = len(np.where(hcp.ca_network.map_all[:59412] == i)[0])
-    values.append(value)
-    print(value)
-
-min_value = min(values)
-max_value = max(values)
-mean_value = sum(values) / len(values)
-std_value = np.std(values)
-
-print("Min:", min_value)
-print("Max:", max_value)
-print("Mean:", mean_value)
-print("Std:", std_value)
-
-
-#%%
 
 for session in sessions:
         
@@ -4108,10 +4311,8 @@ import hcp_utils as hcp
 # https://teneto.readthedocs.io/en/latest/tutorial/networkmeasures.html
 from teneto import communitymeasures
 
-# qsub -cwd -t 1:17 allegiance.sh
-
-#idx = int(os.getenv("SGE_TASK_ID"))
-idx = 1
+idx = int(os.getenv("SLURM_ARRAY_TASK_ID"))
+#idx = 1
 
 atlas = hcp.yeo17 # {‘mmp’, ‘ca_parcels’, ‘ca_network’, ‘yeo7’, ‘yeo17’}
 #path = '/Volumes/Elements/Hyperalignment/HCP/200sbj/modularity/matlab_output/'
@@ -4122,7 +4323,7 @@ for net in range(idx,idx+1):
     
     # import community assignment of sessions
     communities = sio.loadmat(f'{path}S_net{net}.mat', squeeze_me=True)['S']
-
+    
     num_set = communities.shape[0]
     
     # create static communities (networks' labels)
@@ -4138,7 +4339,7 @@ for net in range(idx,idx+1):
         #promiscuity.append(communitymeasures.promiscuity(communities[s])) # 0 entails only 1 community. 1 entails all communities
     
     print("Network: {} --> Length: {}".format(net, len(roi_idx)))
-
+    
     #os.chdir('/Volumes/Elements/Hyperalignment/HCP/200sbj/modularity/allegiance/')
     os.chdir('/dcs05/ciprian/smart/farahani/SL-CHA/modularity/allegiance/')
     
